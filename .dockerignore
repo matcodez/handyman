@@ -1,0 +1,9 @@
+node_modules
+.next
+.data
+.git
+.claude
+.DS_Store
+*.tsbuildinfo
+.env
+.env.local

@@ -1,0 +1,12 @@
+# Despliegue en Render (plan gratuito). Render > New > Blueprint > selecciona este repositorio.
+# El plan gratuito no tiene disco persistente: al reiniciarse o "dormirse" por inactividad,
+# la demo vuelve a los datos iniciales (útil para presentar siempre desde cero).
+services:
+  - type: web
+    name: handyman
+    runtime: docker
+    plan: free
+    healthCheckPath: /login
+    envVars:
+      - key: AUTH_SECRET
+        generateValue: true

@@ -73,6 +73,18 @@ Para repetir la demostración desde cero: detén el servidor, ejecuta `npm run d
 
 ---
 
+## Publicar en internet (Render, gratis)
+
+El repositorio incluye un `Dockerfile` y un `render.yaml`.
+
+1. Sube este repositorio a GitHub.
+2. En https://dashboard.render.com elige **New → Blueprint**, conecta GitHub y selecciona el repositorio. Render crea el servicio `handyman` con un `AUTH_SECRET` aleatorio.
+3. El primer build tarda unos minutos. La URL queda como `https://handyman-xxxx.onrender.com`.
+
+En el plan gratuito, el servicio se "duerme" tras 15 minutos sin visitas: la siguiente carga tarda alrededor de un minuto. Además, sin disco persistente, al reiniciarse vuelve a los datos demo iniciales. Para conservar datos, monta un disco en `/data` (plan de pago) o usa Railway con un volumen (`railway.json` incluido).
+
+---
+
 ## Arquitectura
 
 | Capa | Implementación en el MVP | Camino a producción |

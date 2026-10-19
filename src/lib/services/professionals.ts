@@ -136,7 +136,7 @@ export async function updateProProfile(
       [input.public_name, input.bio, input.years_experience, input.availability, validZones, actor.id],
     )
     await t.q(`update users set phone = $1, avatar_url = coalesce($2, avatar_url) where id = $3`, [input.phone, avatarUrl, actor.id])
-    const cats = await t.q<{ id: string }>(`select id from categories where active and id::text = any($1::text[])`, [categoryIds])
+    const cats = await t.q<{ id: string }>(`select id from categories where active and id::text in (select jsonb_array_elements_text($1::jsonb))`, [categoryIds])
     await t.q(`update professional_categories set active = false where professional_id = $1`, [actor.id])
     for (const c of cats) {
       await t.q(

@@ -21,6 +21,8 @@ export const viewport: Viewport = { themeColor: '#0b1020', viewportFit: 'cover' 
 
 // Todas las páginas dependen de la sesión o de la base de datos: se renderizan por request.
 export const dynamic = 'force-dynamic'
+// En Vercel, el primer request crea el esquema y los datos demo: se da margen de tiempo.
+export const maxDuration = 60
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

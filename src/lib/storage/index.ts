@@ -1,19 +1,19 @@
 import 'server-only'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import crypto from 'node:crypto'
-import { dataDir } from '@/lib/db/client'
+import { db } from '@/lib/db/client'
 import { AppError } from '@/lib/errors'
 
 /**
- * Almacenamiento de archivos — adaptador local para el modo demo.
- *   public/  → fotos de solicitudes, portafolio y evidencia (nombres UUID no listables)
- *   private/ → documentos de verificación; solo se sirven tras comprobar permisos
- * En producción se sustituye por Supabase Storage (bucket privado + URLs firmadas).
+ * Almacenamiento de archivos en la base de datos (tabla `files`).
+ *   public  → fotos de solicitudes, portafolio y evidencia (nombres UUID no listables)
+ *   private → documentos de verificación; solo se sirven tras comprobar permisos
+ * Funciona igual en local y en hosts sin disco. En una fase posterior puede
+ * reemplazarse por Supabase Storage o S3 (bucket privado + URLs firmadas).
  */
 export type Bucket = 'public' | 'private'
 
-const MAX_BYTES = 5 * 1024 * 1024
+// Vercel limita cada envío a ~4.5 MB; las fotos se comprimen en el navegador antes de subirse.
+const MAX_BYTES = 4 * 1024 * 1024
 const MAX_FILES = 6
 
 const SIGNATURES: { ext: string; mime: string; test: (b: Buffer) => boolean }[] = [
@@ -23,26 +23,22 @@ const SIGNATURES: { ext: string; mime: string; test: (b: Buffer) => boolean }[] 
   { ext: 'pdf', mime: 'application/pdf', test: (b) => b.subarray(0, 5).toString() === '%PDF-' },
 ]
 
-export const MIME_BY_EXT: Record<string, string> = Object.fromEntries(SIGNATURES.map((s) => [s.ext, s.mime]))
-
-export function storageRoot() {
-  return path.join(dataDir(), 'storage')
-}
-
 /** Valida por contenido real (firma binaria), no por extensión ni por el MIME declarado. */
 export async function saveFile(file: File, bucket: Bucket, opts: { allowPdf?: boolean } = {}) {
   if (file.size === 0) throw new AppError('El archivo está vacío.')
-  if (file.size > MAX_BYTES) throw new AppError('Cada archivo debe pesar 5 MB o menos.')
+  if (file.size > MAX_BYTES) throw new AppError('Cada archivo debe pesar 4 MB o menos.')
   const buf = Buffer.from(await file.arrayBuffer())
   const kind = SIGNATURES.find((s) => s.test(buf))
   if (!kind || (kind.ext === 'pdf' && !opts.allowPdf)) {
     throw new AppError(opts.allowPdf ? 'Formato no permitido. Usa JPG, PNG, WEBP o PDF.' : 'Formato no permitido. Usa JPG, PNG o WEBP.')
   }
   const name = `${crypto.randomUUID()}.${kind.ext}`
-  const dir = path.join(storageRoot(), bucket)
-  await fs.mkdir(dir, { recursive: true })
-  await fs.writeFile(path.join(dir, name), buf)
+  await db.q(`insert into files (bucket, name, mime, size_bytes, data) values ($1,$2,$3,$4,$5)`, [bucket, name, kind.mime, buf.length, buf])
   return `${bucket}/${name}`
+}
+
+export function readFile(bucket: Bucket, name: string) {
+  return db.q1<{ mime: string; data: Uint8Array }>(`select mime, data from files where bucket = $1 and name = $2`, [bucket, name])
 }
 
 export function fileUrl(storagePath: string) {

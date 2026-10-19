@@ -1,9 +1,7 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { db } from '@/lib/db/client'
-import { MIME_BY_EXT, storageRoot } from '@/lib/storage'
+import { readFile } from '@/lib/storage'
 
 const NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|pdf)$/
 
@@ -28,16 +26,13 @@ export async function GET(_req: Request, { params }: { params: { bucket: string;
     }
   }
 
-  try {
-    const data = await fs.readFile(path.join(storageRoot(), bucket, name))
-    return new NextResponse(data, {
-      headers: {
-        'Content-Type': MIME_BY_EXT[name.split('.').pop()!] ?? 'application/octet-stream',
-        'Cache-Control': bucket === 'private' ? 'private, no-store' : 'public, max-age=31536000, immutable',
-        'Content-Disposition': 'inline',
-      },
-    })
-  } catch {
-    return new NextResponse('No encontrado', { status: 404 })
-  }
+  const file = await readFile(bucket, name)
+  if (!file) return new NextResponse('No encontrado', { status: 404 })
+  return new NextResponse(Buffer.from(file.data), {
+    headers: {
+      'Content-Type': file.mime,
+      'Cache-Control': bucket === 'private' ? 'private, no-store' : 'public, max-age=31536000, immutable',
+      'Content-Disposition': 'inline',
+    },
+  })
 }

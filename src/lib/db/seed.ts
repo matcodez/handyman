@@ -1,8 +1,6 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import crypto from 'node:crypto'
 import bcrypt from 'bcryptjs'
-import type { PGlite } from '@electric-sql/pglite'
+import type { RawTx } from './client'
 import { DEMO_PASSWORD, demoPhoto } from '@/lib/demo'
 
 /**
@@ -134,11 +132,10 @@ function demoPdf(title: string) {
   return Buffer.from(out, 'latin1')
 }
 
-export async function seed(pg: PGlite) {
-  const dataRoot = process.env.HANDYMAN_DATA_DIR || path.join(process.cwd(), '.data')
+export async function seed(t: RawTx) {
   const hash = await bcrypt.hash(DEMO_PASSWORD, 10)
 
-  await pg.transaction(async (t) => {
+  {
     const ins = async (table: string, row: Record<string, unknown>): Promise<string> => {
       const keys = Object.keys(row)
       const res = await t.query<Record<string, string>>(
@@ -193,11 +190,10 @@ export async function seed(pg: PGlite) {
       }
       // Documentos privados (PDF de demostración en almacenamiento privado)
       const docTypes = p.status === 'rejected' ? ['dpi'] : ['dpi', 'antecedentes_penales', 'antecedentes_policiacos']
-      const dir = path.join(dataRoot, 'storage', 'private')
-      fs.mkdirSync(dir, { recursive: true })
       for (const dt of docTypes) {
         const file = `${crypto.randomUUID()}.pdf`
-        fs.writeFileSync(path.join(dir, file), demoPdf(`${dt.toUpperCase().replace(/_/g, ' ')} - ${p.full.normalize('NFD').replace(/[̀-ͯ]/g, '')}`))
+        const pdf = demoPdf(`${dt.toUpperCase().replace(/_/g, ' ')} - ${p.full.normalize('NFD').replace(/[\u0300-\u036f]/g, '')}`)
+        await t.query(`insert into files (bucket, name, mime, size_bytes, data) values ($1,$2,$3,$4,$5)`, ['private', file, 'application/pdf', pdf.length, pdf])
         await ins('professional_documents', {
           professional_id: id, document_type: dt, private_storage_path: `private/${file}`, original_name: `${dt}-demo.pdf`,
           review_status: p.status === 'approved' ? 'approved' : p.status === 'rejected' ? 'rejected' : 'pending',
@@ -396,5 +392,5 @@ export async function seed(pg: PGlite) {
     await ins('audit_logs', { actor_id: pro.pendiente, action: 'verification.submitted', entity_type: 'professional', entity_id: pro.pendiente, metadata: { documents: 3 }, created_at: ago(0, 20) })
     await ins('audit_logs', { actor_id: roberto, action: 'case.opened', entity_type: 'support_case', entity_id: caso1, metadata: { kind: 'dispute', reason: 'El trabajo quedó incompleto' }, created_at: ago(0.6) })
     await ins('audit_logs', { actor_id: roberto, action: 'case.opened', entity_type: 'support_case', entity_id: caso2, metadata: { kind: 'warranty', reason: 'Una pieza instalada dejó de funcionar' }, created_at: ago(0.3) })
-  })
+  }
 }

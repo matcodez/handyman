@@ -6,7 +6,7 @@ import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { SignJWT, jwtVerify } from 'jose'
-import { db, dataDir } from '@/lib/db/client'
+import { db, dataDir, databaseUrl } from '@/lib/db/client'
 import type { Role } from '@/lib/domain/states'
 
 /**
@@ -29,6 +29,11 @@ export interface SessionUser {
 
 function secret() {
   let s = process.env.AUTH_SECRET
+  if (!s && databaseUrl()) {
+    // Serverless (varias instancias, sin disco compartido): secreto estable derivado de la
+    // cadena de conexión, que ya es secreta. Definir AUTH_SECRET sigue siendo lo recomendado.
+    s = crypto.createHash('sha256').update(`handyman-session:${databaseUrl()}`).digest('hex')
+  }
   if (!s) {
     const file = path.join(dataDir(), 'auth-secret')
     if (fs.existsSync(file)) s = fs.readFileSync(file, 'utf8')

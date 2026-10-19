@@ -73,15 +73,20 @@ Para repetir la demostración desde cero: detén el servidor, ejecuta `npm run d
 
 ---
 
-## Publicar en internet (Render, gratis)
+## Publicar en internet: Vercel + Neon (gratis, siempre en línea)
 
-El repositorio incluye un `Dockerfile` y un `render.yaml`.
+Cuando existe `DATABASE_URL` (o `POSTGRES_URL`), la app usa ese PostgreSQL en lugar del embebido. Las fotos y documentos se guardan en la propia base (tabla `files`), por lo que no necesita disco.
 
-1. Sube este repositorio a GitHub.
-2. En https://dashboard.render.com elige **New → Blueprint**, conecta GitHub y selecciona el repositorio. Render crea el servicio `handyman` con un `AUTH_SECRET` aleatorio.
-3. El primer build tarda unos minutos. La URL queda como `https://handyman-xxxx.onrender.com`.
+1. En https://vercel.com/new importa el repositorio de GitHub y despliega.
+2. En el proyecto, abre **Storage → Create Database → Neon** y conéctala al proyecto. Vercel agrega `DATABASE_URL` automáticamente.
+3. Vuelve a desplegar el proyecto (**Deployments → Redeploy**). En la primera visita se crean el esquema y los datos demo.
+4. Opcional y recomendado: agrega la variable `AUTH_SECRET` con un valor aleatorio largo.
 
-En el plan gratuito, el servicio se "duerme" tras 15 minutos sin visitas: la siguiente carga tarda alrededor de un minuto. Además, sin disco persistente, al reiniciarse vuelve a los datos demo iniciales. Para conservar datos, monta un disco en `/data` (plan de pago) o usa Railway con un volumen (`railway.json` incluido).
+Cada `git push` a `main` vuelve a desplegar automáticamente. Para reiniciar la demo en producción: `DATABASE_URL="…" npm run db:reset`.
+
+Las fotos se comprimen en el navegador antes de subirse, porque Vercel limita cada envío a unos 4.5 MB.
+
+**Alternativas.** El `Dockerfile` sirve para Render, Railway o Fly.io. El plan gratuito de Render se "duerme" tras 15 minutos sin visitas, por lo que no se recomienda para una presentación.
 
 ---
 

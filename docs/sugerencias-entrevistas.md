@@ -35,6 +35,14 @@ La columna "Quién" indica cuántas personas lo pidieron (de 4 entrevistadas has
 | S13 | Más servicios: jardinería, electrodomésticos, mantenimiento eléctrico y de tuberías | #4 | 🟡 Jardinería, electricidad y plomería ya existen; electrodomésticos no | Crear "Instalación y reparación de electrodomésticos" (se hace desde el panel, sin código). Que pidiera servicios que ya existen indica un problema para encontrarlos: agregar palabras clave por oficio (lavadora, refri, fuga, apagador…) al buscador |
 | S14 | Que otro trabajador corrija el problema sin volver a pagar | #4 | 🟡 La garantía puede aprobar una corrección, pero solo por el mismo profesional | Garantía de reemplazo: si el profesional original no corrige en un plazo (por ejemplo, 5 días) o el cliente no quiere que regrese, Handyman asigna a otro profesional verificado sin costo para el cliente, pagado con el pago retenido o con un fondo de garantía de la comisión |
 
+### Otras sugerencias recogidas por el equipo
+
+| Id | Sugerencia | Estado hoy | Propuesta |
+| --- | --- | --- | --- |
+| S15 | Equipo de soporte concreto, tipo call center, que dirija cuando hay fallas | 🟡 Solo existe el proceso de reclamo; el correo de soporte es ficticio y no hay canal humano visible | Centro de ayuda con canales visibles (WhatsApp de soporte, teléfono y horario), botón "Necesito ayuda" en cada orden que abre un caso con número y agente asignado, y tiempo de respuesta comprometido. Se integra con S6 |
+| S16 | Página más visual y simple, que no agobie a quien le cuesta navegar | 🟡 La interfaz es limpia, pero la página de inicio tiene muchas secciones y bastante texto | Modo simple: inicio con botones grandes de "¿Qué necesitas?" con íconos, menos texto, asistente de una pregunta por pantalla, opción de letra grande y pasos explicados con imágenes en lugar de párrafos |
+| — | Perfiles de los profesionales | ✅ La mayoría de entrevistados dijo que están bien | Sin cambios; solo agregar referencias verificadas (S7) y el bloque "Por qué confiar" (S10) |
+
 ## Ideas del equipo
 
 | Id | Idea | Estado hoy | Propuesta |

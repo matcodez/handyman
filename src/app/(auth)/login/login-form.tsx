@@ -1,13 +1,21 @@
 'use client'
 
 import { useRef } from 'react'
-import { FlaskConical } from 'lucide-react'
+import { ChevronDown, FlaskConical } from 'lucide-react'
 import { loginAction } from '@/app/actions/auth'
 import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 
-export function LoginForm({ demo }: { demo: { role: string; name: string; email: string; hint: string; password: string }[] }) {
+export function LoginForm({ demo, areas = [] }: {
+  demo: { role: string; name: string; email: string; hint: string; password: string }[]
+  areas?: { area: string; email: string; name: string }[]
+}) {
   const email = useRef<HTMLInputElement>(null)
   const password = useRef<HTMLInputElement>(null)
+  const fill = (e: string, p: string) => {
+    if (email.current) email.current.value = e
+    if (password.current) password.current.value = p
+    email.current?.form?.querySelector<HTMLButtonElement>('button[type=submit]')?.focus()
+  }
 
   return (
     <>
@@ -49,6 +57,24 @@ export function LoginForm({ demo }: { demo: { role: string; name: string; email:
             </li>
           ))}
         </ul>
+        {areas.length > 0 && (
+          <details className="group mt-3 rounded-xl bg-white shadow-card">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3.5 py-2.5 font-display text-sm font-medium text-ink [&::-webkit-details-marker]:hidden">
+              Ver un profesional de cada área ({areas.length})
+              <ChevronDown className="h-4 w-4 text-ink3 transition-transform group-open:rotate-180" aria-hidden />
+            </summary>
+            <ul className="grid gap-1 border-t border-line p-2 sm:grid-cols-2">
+              {areas.map((a) => (
+                <li key={a.email}>
+                  <button type="button" onClick={() => fill(a.email, demo[0]?.password ?? '')} className="w-full rounded-lg px-2.5 py-2 text-left hover:bg-paper">
+                    <span className="block font-display text-[13px] font-medium text-ink">{a.area}</span>
+                    <span className="block truncate text-xs text-ink3">{a.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </section>
     </>
   )

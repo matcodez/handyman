@@ -79,7 +79,7 @@ const PROS: ProSeed[] = [
     bio: 'Servicio de fletes y mudanzas pequeñas dentro de la ciudad capital y municipios cercanos.' },
 ]
 
-const WORKS: Record<string, string[]> = {
+export const WORKS: Record<string, string[]> = {
   plomeria: ['Reparación de fuga en lavamanos', 'Cambio de calentador de paso', 'Destape de drenaje de cocina', 'Instalación de grifería de baño'],
   electricidad: ['Cambio de tablero de distribución', 'Instalación de luminarias LED', 'Reparación de tomacorrientes', 'Cableado para estufa eléctrica'],
   pintura: ['Pintura de sala y comedor', 'Retoque de fachada', 'Pintura de oficina de 80 m²', 'Pintura de dormitorios'],
@@ -96,10 +96,11 @@ const WORKS: Record<string, string[]> = {
   pisos: ['Instalación de porcelanato', 'Cambio de piso de baño'],
   techado: ['Impermeabilización de losa', 'Reparación de lámina'],
   mudanzas: ['Mudanza de apartamento', 'Traslado de oficina pequeña'],
-  herreria: ['Portón corredizo', 'Balcón de seguridad'],
+  herreria: ['Portón corredizo', 'Balcón de seguridad', 'Protecciones para ventanas', 'Reparación de soldadura'],
+  'ingenieria-civil': ['Inspección estructural de vivienda', 'Planos para ampliación', 'Supervisión de remodelación'],
 }
 
-const COMMENTS = [
+export const COMMENTS = [
   'Llegó puntual, explicó lo que iba a hacer y dejó todo limpio. Muy recomendado.',
   'Buen trabajo y precio justo. Respetó lo que se había cotizado.',
   'Resolvió el problema el mismo día. Excelente comunicación por la app.',
@@ -110,7 +111,7 @@ const COMMENTS = [
 ]
 
 /** PDF mínimo válido para los documentos privados de demostración. */
-function demoPdf(title: string) {
+export function demoPdf(title: string) {
   const stream = `BT /F1 16 Tf 36 200 Td (${title}) Tj 0 -26 Td /F1 11 Tf (DOCUMENTO DE DEMOSTRACION - SIN VALIDEZ) Tj 0 -18 Td (Handyman / datos ficticios) Tj ET`
   const objs = [
     '<</Type/Catalog/Pages 2 0 R>>',

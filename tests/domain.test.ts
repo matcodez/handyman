@@ -101,3 +101,28 @@ describe('privacidad en el chat previo a contratar', async () => {
     expect(maskContactInfo('El trabajo cuesta Q 450 y dura 2 horas')).toBe('El trabajo cuesta Q 450 y dura 2 horas')
   })
 })
+
+describe('centro de soporte: tiempos de respuesta', async () => {
+  const { defaultPriority, slaDue, slaState, relativeTime } = await import('@/lib/domain/sla')
+  const t0 = new Date('2026-10-25T10:00:00Z')
+  it('las incidencias (pago retenido) tienen prioridad alta y 4 h de plazo', () => {
+    expect(defaultPriority('dispute')).toBe('alta')
+    expect(defaultPriority('warranty')).toBe('normal')
+    expect(slaDue(t0, 'alta').toISOString()).toBe('2026-10-25T14:00:00.000Z')
+    expect(slaDue(t0, 'urgente').toISOString()).toBe('2026-10-25T11:00:00.000Z')
+  })
+  it('calcula el estado del compromiso', () => {
+    const due = slaDue(t0, 'alta')
+    const at = (h: number) => new Date(t0.getTime() + h * 3600_000)
+    expect(slaState({ sla_due_at: due, first_response_at: null, priority: 'alta' }, at(1))).toBe('on_time')
+    expect(slaState({ sla_due_at: due, first_response_at: null, priority: 'alta' }, at(3.5))).toBe('due_soon')
+    expect(slaState({ sla_due_at: due, first_response_at: null, priority: 'alta' }, at(5))).toBe('overdue')
+    expect(slaState({ sla_due_at: due, first_response_at: at(2), priority: 'alta' }, at(5))).toBe('met')
+    expect(slaState({ sla_due_at: due, first_response_at: at(6), priority: 'alta' }, at(7))).toBe('late_met')
+    expect(slaState({ sla_due_at: due, first_response_at: null, priority: 'alta', closed: true }, at(9))).toBe('closed')
+  })
+  it('expresa tiempos relativos en español', () => {
+    expect(relativeTime(new Date(t0.getTime() + 200 * 60000), t0)).toBe('en 3 h 20 min')
+    expect(relativeTime(new Date(t0.getTime() - 15 * 60000), t0)).toBe('hace 15 min')
+  })
+})

@@ -113,6 +113,7 @@ async function init(): Promise<Driver> {
     const dataMigrations: [string, () => Promise<void>][] = [
       ['data:003_demo_pros_por_area', async () => (await import('./seed-pros')).seedDemoProsByArea(t)],
       ['data:005_conversaciones_demo', async () => (await import('./seed-chat')).seedDemoConversations(t)],
+      ['data:006_centro_de_soporte', async () => (await import('./seed-support')).seedSupportCenter(t)],
     ]
     for (const [name, run] of dataMigrations) {
       if (applied.has(name)) continue

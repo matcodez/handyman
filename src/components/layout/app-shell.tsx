@@ -97,7 +97,7 @@ export const PRO_NAV: NavItem[] = [
 export const ADMIN_NAV: NavItem[] = [
   { href: '/admin', label: 'Panel', icon: 'dashboard', exact: true },
   { href: '/admin/profesionales', label: 'Profesionales', short: 'Verificar', icon: 'pros' },
-  { href: '/admin/casos', label: 'Casos y reclamos', short: 'Casos', icon: 'cases' },
+  { href: '/admin/casos', label: 'Centro de soporte', short: 'Soporte', icon: 'cases' },
   { href: '/mensajes', label: 'Mensajes y soporte', short: 'Mensajes', icon: 'messages' },
   { href: '/admin/operaciones', label: 'Operaciones', short: 'Órdenes', icon: 'orders' },
   { href: '/admin/categorias', label: 'Categorías y garantías', short: 'Oficios', icon: 'categories' },

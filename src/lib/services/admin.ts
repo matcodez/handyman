@@ -1,11 +1,13 @@
 import 'server-only'
-import { db, tx } from '@/lib/db/client'
+import { db, tx, type Exec } from '@/lib/db/client'
 import { AppError } from '@/lib/errors'
 import type { SessionUser } from '@/lib/auth/session'
 import { canVerificationTransition, type CaseStatus, type OrderStatus, type RequestStatus, type VerificationStatus, type WarrantyStatus } from '@/lib/domain/states'
+import type { CasePriority } from '@/lib/domain/sla'
 import { audit, notify } from './core'
 import { slugify } from './catalog'
 import { completeOrder } from './orders'
+import { postSystemMessage } from './messaging'
 import { getPaymentProvider } from '@/lib/payments/provider'
 
 function assertAdmin(actor: SessionUser) {
@@ -186,6 +188,10 @@ export interface AdminCase {
   resolved_at: Date | null; created_at: Date; order_number: string; order_status: OrderStatus; agreed_price: string
   title: string; customer_name: string; customer_id: string; pro_name: string; professional_id: string
   warranty_status: WarrantyStatus | null; resolver_name: string | null
+  priority: CasePriority; sla_due_at: Date | null; first_response_at: Date | null; escalated_at: Date | null
+  assigned_to: string | null; agent_name: string | null; conversation_id: string | null
+  agreement_text: string | null; agreement_outcome: string | null; agreement_proposed_at: Date | null
+  agreement_customer_at: Date | null; agreement_pro_at: Date | null
 }
 
 export function getCase(id: string) {
@@ -193,10 +199,12 @@ export function getCase(id: string) {
     `select s.id, s.case_number, s.order_id, s.warranty_id, s.kind, s.reason, s.description, s.evidence_urls, s.status,
             s.resolution, s.resolved_at, s.created_at, o.order_number, o.status as order_status, o.agreed_price::text as agreed_price,
             r.title, cu.full_name as customer_name, o.customer_id, p.public_name as pro_name, o.professional_id,
-            w.status as warranty_status, ru.full_name as resolver_name
+            w.status as warranty_status, ru.full_name as resolver_name,
+            s.priority, s.sla_due_at, s.first_response_at, s.escalated_at, s.assigned_to, au.full_name as agent_name, s.conversation_id,
+            s.agreement_text, s.agreement_outcome, s.agreement_proposed_at, s.agreement_customer_at, s.agreement_pro_at
      from support_cases s join orders o on o.id = s.order_id join service_requests r on r.id = o.request_id
      join users cu on cu.id = o.customer_id join professional_profiles p on p.user_id = o.professional_id
-     left join warranties w on w.id = s.warranty_id left join users ru on ru.id = s.resolved_by
+     left join warranties w on w.id = s.warranty_id left join users ru on ru.id = s.resolved_by left join users au on au.id = s.assigned_to
      where s.id = $1`,
     [id],
   )
@@ -207,57 +215,72 @@ export type CaseAction = 'review' | 'release' | 'refund' | 'approve_fix' | 'reso
 /** Resolución documentada de un caso. Cada salida deja resolución escrita y auditoría. */
 export async function resolveCase(actor: SessionUser, caseId: string, action: CaseAction, resolution: string) {
   assertAdmin(actor)
+  await tx((t) => applyCaseAction(t, actor.id, caseId, action, resolution))
+}
+
+/**
+ * Aplica una acción sobre un caso dentro de una transacción. La usa administración directamente
+ * y también el centro de soporte cuando cliente y profesional aceptan un acuerdo de mediación.
+ */
+export async function applyCaseAction(t: Exec, actorId: string, caseId: string, action: CaseAction, resolution: string) {
   const text = resolution.trim()
   if (action !== 'review' && text.length < 10) throw new AppError('Documenta la resolución (mínimo 10 caracteres).')
-  await tx(async (t) => {
-    const c = await t.q1<{ id: string; case_number: string; kind: 'dispute' | 'warranty'; status: CaseStatus; order_id: string; warranty_id: string | null }>(
-      `select id, case_number, kind, status, order_id, warranty_id from support_cases where id = $1`, [caseId],
+  const c = await t.q1<{ id: string; case_number: string; kind: 'dispute' | 'warranty'; status: CaseStatus; order_id: string; warranty_id: string | null; conversation_id: string | null }>(
+    `select id, case_number, kind, status, order_id, warranty_id, conversation_id from support_cases where id = $1`, [caseId],
+  )
+  if (!c) throw new AppError('Caso no encontrado.')
+  if (['resolved', 'rejected'].includes(c.status)) throw new AppError('Este caso ya está cerrado.')
+  const o = (await t.q1<{ id: string; order_number: string; customer_id: string; professional_id: string; status: OrderStatus; agreed_price: string; category_id: string; title: string }>(
+    `select o.id, o.order_number, o.customer_id, o.professional_id, o.status, o.agreed_price::text as agreed_price, r.category_id, r.title
+     from orders o join service_requests r on r.id = o.request_id where o.id = $1`, [c.order_id],
+  ))!
+  const close = async (status: CaseStatus) =>
+    t.q(`update support_cases set status = $1, resolution = $2, resolved_by = $3, resolved_at = now() where id = $4`, [status, text, actorId, c.id])
+  let customerMsg = ''
+
+  if (action === 'review') {
+    await t.q(
+      `update support_cases set status = 'in_review', assigned_to = coalesce(assigned_to, $2), first_response_at = coalesce(first_response_at, now()) where id = $1`,
+      [c.id, actorId],
     )
-    if (!c) throw new AppError('Caso no encontrado.')
-    if (['resolved', 'rejected'].includes(c.status)) throw new AppError('Este caso ya está cerrado.')
-    const o = (await t.q1<{ id: string; order_number: string; customer_id: string; professional_id: string; status: OrderStatus; agreed_price: string; category_id: string; title: string }>(
-      `select o.id, o.order_number, o.customer_id, o.professional_id, o.status, o.agreed_price::text as agreed_price, r.category_id, r.title
-       from orders o join service_requests r on r.id = o.request_id where o.id = $1`, [c.order_id],
-    ))!
-    const close = async (status: CaseStatus) =>
-      t.q(`update support_cases set status = $1, resolution = $2, resolved_by = $3, resolved_at = now() where id = $4`, [status, text, actor.id, c.id])
-    let customerMsg = ''
+    if (c.warranty_id) await t.q(`update warranties set status = 'in_review' where id = $1 and status = 'reported'`, [c.warranty_id])
+    customerMsg = 'Tu caso está en revisión.'
+  } else if (c.kind === 'dispute' && action === 'release') {
+    if (o.status !== 'disputed') throw new AppError('La orden ya no está en disputa.')
+    await completeOrder(t, o, actorId)
+    await close('resolved')
+    customerMsg = 'Caso resuelto: el trabajo se dio por completado y tu garantía quedó activa.'
+  } else if (c.kind === 'dispute' && action === 'refund') {
+    if (o.status !== 'disputed') throw new AppError('La orden ya no está en disputa.')
+    const pay = await t.q1<{ provider_reference: string }>(`select provider_reference from payments where order_id = $1`, [o.id])
+    const res = await getPaymentProvider().cancel(pay?.provider_reference ?? '')
+    await t.q(`update payments set status = $1, updated_at = now() where order_id = $2`, [res.status, o.id])
+    await t.q(`update orders set status = 'cancelled' where id = $1`, [o.id])
+    await close('resolved')
+    customerMsg = 'Caso resuelto a tu favor: la orden fue cancelada y el pago demo quedó cancelado.'
+  } else if (c.kind === 'warranty' && action === 'approve_fix') {
+    await t.q(`update warranties set status = 'approved_fix' where id = $1`, [c.warranty_id])
+    await t.q(`update support_cases set status = 'in_review', resolution = $1 where id = $2`, [text, c.id])
+    customerMsg = 'Tu garantía fue aprobada para corrección. El profesional coordinará la visita.'
+  } else if (c.kind === 'warranty' && action === 'resolve') {
+    await t.q(`update warranties set status = 'resolved' where id = $1`, [c.warranty_id])
+    await close('resolved')
+    customerMsg = 'Tu caso de garantía fue resuelto.'
+  } else if (c.kind === 'warranty' && action === 'reject') {
+    await t.q(`update warranties set status = 'rejected' where id = $1`, [c.warranty_id])
+    await close('rejected')
+    customerMsg = 'Tu reporte de garantía fue rechazado. Revisa el motivo en el detalle.'
+  } else {
+    throw new AppError('Acción no válida para este tipo de caso.')
+  }
 
-    if (action === 'review') {
-      await t.q(`update support_cases set status = 'in_review' where id = $1`, [c.id])
-      if (c.warranty_id) await t.q(`update warranties set status = 'in_review' where id = $1 and status = 'reported'`, [c.warranty_id])
-      customerMsg = 'Tu caso está en revisión.'
-    } else if (c.kind === 'dispute' && action === 'release') {
-      if (o.status !== 'disputed') throw new AppError('La orden ya no está en disputa.')
-      await completeOrder(t, o, actor.id)
-      await close('resolved')
-      customerMsg = 'Caso resuelto: el trabajo se dio por completado y tu garantía quedó activa.'
-    } else if (c.kind === 'dispute' && action === 'refund') {
-      if (o.status !== 'disputed') throw new AppError('La orden ya no está en disputa.')
-      const pay = await t.q1<{ provider_reference: string }>(`select provider_reference from payments where order_id = $1`, [o.id])
-      const res = await getPaymentProvider().cancel(pay?.provider_reference ?? '')
-      await t.q(`update payments set status = $1, updated_at = now() where order_id = $2`, [res.status, o.id])
-      await t.q(`update orders set status = 'cancelled' where id = $1`, [o.id])
-      await close('resolved')
-      customerMsg = 'Caso resuelto a tu favor: la orden fue cancelada y el pago demo quedó cancelado.'
-    } else if (c.kind === 'warranty' && action === 'approve_fix') {
-      await t.q(`update warranties set status = 'approved_fix' where id = $1`, [c.warranty_id])
-      await t.q(`update support_cases set status = 'in_review', resolution = $1 where id = $2`, [text, c.id])
-      customerMsg = 'Tu garantía fue aprobada para corrección. El profesional coordinará la visita.'
-    } else if (c.kind === 'warranty' && action === 'resolve') {
-      await t.q(`update warranties set status = 'resolved' where id = $1`, [c.warranty_id])
-      await close('resolved')
-      customerMsg = 'Tu caso de garantía fue resuelto.'
-    } else if (c.kind === 'warranty' && action === 'reject') {
-      await t.q(`update warranties set status = 'rejected' where id = $1`, [c.warranty_id])
-      await close('rejected')
-      customerMsg = 'Tu reporte de garantía fue rechazado. Revisa el motivo en el detalle.'
-    } else {
-      throw new AppError('Acción no válida para este tipo de caso.')
-    }
-
-    await notify(t, o.customer_id, { type: 'case.updated', title: `Actualización del caso ${c.case_number}`, body: customerMsg, href: '/cliente/garantias' })
-    await notify(t, o.professional_id, { type: 'case.updated', title: `Actualización del caso ${c.case_number}`, body: text || 'El caso está en revisión.', href: `/pro/ordenes/${o.id}` })
-    await audit(t, actor.id, `case.${action}`, 'support_case', c.id, { case: c.case_number, order: o.order_number, resolution: text || null })
-  })
+  // La sala de mediación refleja cada decisión y se cierra cuando el caso termina.
+  if (c.conversation_id && action !== 'review') {
+    await postSystemMessage(t, c.conversation_id, `🧾 Resolución del caso ${c.case_number}: ${text}`)
+    if (action !== 'approve_fix') await t.q(`update conversations set status = 'closed' where id = $1`, [c.conversation_id])
+  }
+  const customerHref = c.conversation_id ? `/mensajes/${c.conversation_id}` : '/cliente/garantias'
+  await notify(t, o.customer_id, { type: 'case.updated', title: `Actualización del caso ${c.case_number}`, body: customerMsg, href: customerHref })
+  await notify(t, o.professional_id, { type: 'case.updated', title: `Actualización del caso ${c.case_number}`, body: text || 'El caso está en revisión.', href: `/pro/ordenes/${o.id}` })
+  await audit(t, actorId, `case.${action}`, 'support_case', c.id, { case: c.case_number, order: o.order_number, resolution: text || null })
 }

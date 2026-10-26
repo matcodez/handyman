@@ -5,6 +5,7 @@ import type { SessionUser } from '@/lib/auth/session'
 import { notify } from './core'
 import { getRequestForPro } from './requests'
 import { maskContactInfo } from '@/lib/domain/privacy'
+import { registerAgentReply } from './support'
 
 export type ConversationKind = 'quote' | 'order' | 'support'
 
@@ -121,7 +122,9 @@ export async function openSupportConversation(actor: SessionUser, opts: { orderI
   return tx(async (t) => {
     const found = await t.q1<{ id: string }>(
       `select id from conversations where kind = 'support' and owner_id = $1 and status = 'open'
-         and coalesce(order_id::text, '') = coalesce($2::text, '') order by created_at desc limit 1`,
+         and coalesce(order_id::text, '') = coalesce($2::text, '')
+         and not exists (select 1 from support_cases s where s.conversation_id = conversations.id)
+       order by created_at desc limit 1`,
       [actor.id, opts.orderId ?? null],
     )
     if (found) return found.id
@@ -202,6 +205,7 @@ export async function sendMessage(actor: SessionUser, conversationId: string, bo
       [c.id, actor.id, text, attachmentUrl],
     )
     await t.q(`update conversations set last_message_at = now() where id = $1`, [c.id])
+    if (c.kind === 'support' && actor.role === 'admin') await registerAgentReply(t, c.id)
     await t.q(`update conversation_participants set last_read_at = now() where conversation_id = $1 and user_id = $2`, [c.id, actor.id])
 
     // Aviso a los demás participantes, sin repetir mientras tengan uno sin leer de esta conversación.

@@ -1,10 +1,11 @@
 import Link from 'next/link'
-import { LifeBuoy, ShieldCheck, TriangleAlert } from 'lucide-react'
+import { Headphones, LifeBuoy, MessagesSquare, ShieldCheck, TriangleAlert } from 'lucide-react'
 import { requireUser } from '@/lib/auth/session'
 import { formatDate } from '@/lib/format'
 import { CASE, WARRANTY_REASONS } from '@/lib/domain/states'
 import { listCases, listWarranties } from '@/lib/services/orders'
 import { warrantyClaimAction } from '@/app/actions/customer'
+import { openSupportChatAction } from '@/app/actions/messaging'
 import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { EmptyState, PageHeader, Section } from '@/components/ui/primitives'
 import { WarrantyCard } from '@/components/domain/cards'
@@ -36,7 +37,10 @@ export default async function WarrantiesPage() {
                 </div>
                 <p className="mt-1 text-sm text-ink2">{c.reason} · abierto el {formatDate(c.created_at)}</p>
                 {c.resolution && <p className="mt-2 rounded-xl bg-paper px-3 py-2 text-sm"><strong className="font-medium">Resolución:</strong> {c.resolution}</p>}
-                <Link href={`/cliente/ordenes/${c.order_id}`} className="mt-2 inline-block text-sm font-medium text-brand hover:underline">Ver orden {c.order_number}</Link>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {c.conversation_id && <Link href={`/mensajes/${c.conversation_id}`} className="btn-primary btn-sm"><MessagesSquare className="h-4 w-4" aria-hidden />{['open', 'in_review'].includes(c.status) ? 'Abrir sala de mediación' : 'Ver conversación del caso'}</Link>}
+                  <Link href={`/cliente/ordenes/${c.order_id}`} className="btn-ghost btn-sm">Ver orden {c.order_number}</Link>
+                </div>
               </li>
             ))}
           </ul>
@@ -52,13 +56,18 @@ export default async function WarrantiesPage() {
               <WarrantyCard key={w.id} w={w} orderNumber={w.order_number} title={w.title} proName={w.pro_name}>
                 <div className="flex flex-wrap gap-2">
                   <Link href={`/cliente/ordenes/${w.order_id}`} className="btn-secondary btn-sm">Ver orden</Link>
+                  <ActionForm action={openSupportChatAction} resetOnSuccess={false}>
+                    <input type="hidden" name="order_id" value={w.order_id} />
+                    <input type="hidden" name="subject" value={`Duda sobre la garantía · ${w.order_number}`} />
+                    <SubmitButton className="btn-ghost btn-sm"><Headphones className="h-4 w-4" aria-hidden />Necesito ayuda</SubmitButton>
+                  </ActionForm>
                 </div>
                 {w.status === 'active' && (
                   <details className="mt-3 rounded-2xl border border-line">
                     <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 font-display text-sm font-medium text-bad [&::-webkit-details-marker]:hidden">
                       <TriangleAlert className="h-4 w-4" aria-hidden />Reportar un problema cubierto por la garantía
                     </summary>
-                    <ActionForm action={warrantyClaimAction} className="space-y-4 border-t border-line p-4" confirm="¿Enviar el reporte de garantía a administración?">
+                    <ActionForm action={warrantyClaimAction} className="space-y-4 border-t border-line p-4" confirm="¿Enviar el reporte de garantía? Se abrirá un caso con un agente de Handyman asignado.">
                       <input type="hidden" name="warranty_id" value={w.id} />
                       <div>
                         <label className="label" htmlFor={`r-${w.id}`}>Motivo</label>

@@ -223,7 +223,9 @@ export async function OrderDetail({ o, x, viewer, back, banner }: { o: OrderRow;
                     <p className="mt-1 text-sm font-medium">{c.reason}</p>
                     <p className="mt-1 text-sm text-ink2">{c.description}</p>
                     {c.resolution && <p className="mt-2 rounded-lg bg-white px-3 py-2 text-sm"><strong className="font-medium">Resolución:</strong> {c.resolution}</p>}
-                    {viewer === 'admin' && <Link href={`/admin/casos/${c.id}`} className="mt-2 inline-block text-sm font-medium text-brand hover:underline">Gestionar caso</Link>}
+                    {viewer === 'admin'
+                      ? <Link href={`/admin/casos/${c.id}`} className="mt-2 inline-block text-sm font-medium text-brand hover:underline">Gestionar caso</Link>
+                      : c.conversation_id && <Link href={`/mensajes/${c.conversation_id}`} className="btn-primary btn-sm mt-3">{['open', 'in_review'].includes(c.status) ? 'Abrir sala de mediación' : 'Ver conversación del caso'}</Link>}
                   </li>
                 ))}
               </ul>

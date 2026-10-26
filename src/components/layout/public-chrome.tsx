@@ -7,6 +7,7 @@ const LINKS = [
   { href: '/servicios', label: 'Servicios' },
   { href: '/como-funciona', label: 'Cómo funciona' },
   { href: '/profesionales', label: 'Profesionales' },
+  { href: '/ayuda', label: 'Ayuda' },
 ]
 
 export async function PublicNav() {
@@ -64,7 +65,7 @@ export function Footer() {
         <div>
           <h3 className="font-display text-sm font-semibold text-white">Ayuda y legal</h3>
           <ul className="mt-4 space-y-2.5 text-sm">
-            <li><Link href="/legal/ayuda" className="hover:text-white">Centro de ayuda</Link></li>
+            <li><Link href="/ayuda" className="hover:text-white">Centro de ayuda</Link></li>
             <li><Link href="/legal/garantia" className="hover:text-white">Garantía y reclamos</Link></li>
             <li><Link href="/legal/terminos" className="hover:text-white">Términos de uso</Link></li>
             <li><Link href="/legal/privacidad" className="hover:text-white">Privacidad</Link></li>

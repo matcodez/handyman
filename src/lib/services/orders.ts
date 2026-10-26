@@ -9,6 +9,7 @@ import {
 import { getPaymentProvider } from '@/lib/payments/provider'
 import { adminIds, audit, notify, publicCode } from './core'
 import { postOrderEvent } from './messaging'
+import { setupCase } from './support'
 
 export interface ScopeSnapshot {
   title: string
@@ -100,10 +101,10 @@ export interface ReviewRow {
 export interface CaseRow {
   id: string; case_number: string; order_id: string; warranty_id: string | null; kind: 'dispute' | 'warranty'
   reason: string; description: string; evidence_urls: string[]; status: CaseStatus; resolution: string | null
-  resolved_at: Date | null; created_at: Date
+  resolved_at: Date | null; created_at: Date; conversation_id: string | null
 }
 
-const CASE_COLS = `id, case_number, order_id, warranty_id, kind, reason, description, evidence_urls, status, resolution, resolved_at, created_at`
+const CASE_COLS = `id, case_number, order_id, warranty_id, kind, reason, description, evidence_urls, status, resolution, resolved_at, created_at, conversation_id`
 
 /** Datos relacionados de una orden. Llamar solo después de autorizar con getOrder. */
 export async function getOrderExtras(orderId: string) {
@@ -337,13 +338,14 @@ export async function customerOpenDispute(
     for (const url of evidenceUrls) {
       await t.q(`insert into order_evidence (order_id, uploader_id, stage, photo_url, caption) values ($1,$2,'claim',$3,$4)`, [o.id, actor.id, url, input.reason])
     }
+    await setupCase(t, c!.id)
     await t.q(`update orders set status = 'disputed' where id = $1`, [o.id])
     await setPayment(t, o.id, 'requestRefund')
     await notify(t, o.professional_id, { type: 'order.disputed', title: 'El cliente abrió una incidencia', body: `Orden ${o.order_number}: ${input.reason}`, href: `/pro/ordenes/${o.id}` })
     for (const a of await adminIds(t)) {
       await notify(t, a, { type: 'case.new', title: `Nueva incidencia ${c!.case_number}`, body: input.reason, href: `/admin/casos/${c!.id}` })
     }
-    await postOrderEvent(t, o.id, `⚠️ El cliente abrió una incidencia (${c!.case_number}): ${input.reason}. Administración dará seguimiento.`)
+    await postOrderEvent(t, o.id, `⚠️ El cliente abrió una incidencia (${c!.case_number}): ${input.reason}. Soporte Handyman abrió una sala de mediación para resolverlo.`)
     await audit(t, actor.id, 'case.opened', 'support_case', c!.id, { kind: 'dispute', order: o.order_number, reason: input.reason })
     return c!.id
   })
@@ -400,7 +402,7 @@ export function listCases(actor: SessionUser) {
   const where = actor.role === 'customer' ? 'where s.opened_by = $1' : actor.role === 'professional' ? 'where o.professional_id = $1' : ''
   return db.q<CaseRow & { order_number: string; title: string; pro_name: string; customer_name: string }>(
     `select s.id, s.case_number, s.order_id, s.warranty_id, s.kind, s.reason, s.description, s.evidence_urls, s.status,
-            s.resolution, s.resolved_at, s.created_at, o.order_number, r.title, p.public_name as pro_name, cu.full_name as customer_name
+            s.resolution, s.resolved_at, s.created_at, o.order_number, r.title, p.public_name as pro_name, cu.full_name as customer_name, s.conversation_id
      from support_cases s join orders o on o.id = s.order_id join service_requests r on r.id = o.request_id
      join professional_profiles p on p.user_id = o.professional_id join users cu on cu.id = o.customer_id
      ${where} order by s.created_at desc`,
@@ -424,6 +426,7 @@ export async function customerOpenWarrantyClaim(
        values ($1,$2,$3,$4,'warranty',$5,$6,$7) returning id, case_number`,
       [publicCode('CASO'), o.id, w.id, actor.id, input.reason, input.description, evidenceUrls],
     )
+    await setupCase(t, c!.id)
     await t.q(`update warranties set status = 'reported' where id = $1`, [w.id])
     await notify(t, o.professional_id, { type: 'warranty.reported', title: 'Reporte de garantía', body: `Orden ${o.order_number}: ${input.reason}`, href: `/pro/ordenes/${o.id}` })
     for (const a of await adminIds(t)) {

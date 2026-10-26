@@ -9,6 +9,7 @@ export const DEMO_ACCOUNTS = [
   { role: 'Profesional', name: 'Carlos Ajú · Plomero', email: 'plomero@handyman.demo', hint: 'Verificado, con solicitudes por cotizar' },
   { role: 'Profesional', name: 'Diego Ramírez · Herrero', email: 'pendiente@handyman.demo', hint: 'Verificación pendiente: no puede cotizar' },
   { role: 'Administración', name: 'Lucía Méndez', email: 'admin@handyman.demo', hint: 'Verificaciones, categorías, casos y auditoría' },
+  { role: 'Soporte', name: 'Jorge Herrera · Agente y evaluador', email: 'soporte@handyman.demo', hint: 'Centro de soporte, mediación y evaluaciones técnicas' },
 ] as const
 
 /** Las fotos de demostración usan el esquema `demo:<slug-categoria>:<variante>`. */

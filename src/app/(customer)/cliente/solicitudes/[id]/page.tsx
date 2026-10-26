@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { MessageCircle, BadgeCheck, CalendarDays, CircleCheck, Clock, FileText, Images, Lock, MapPin, Package, PackageX, ShieldCheck, X } from 'lucide-react'
 import { requireUser } from '@/lib/auth/session'
 import { formatDate, formatQ, timeAgo } from '@/lib/format'
@@ -14,6 +14,8 @@ import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { Badge, DemoBadge, EmptyState, Notice, PageHeader } from '@/components/ui/primitives'
 import { Avatar, PhotoGrid, Stars, StatusBadge, VerificationBadge } from '@/components/domain/visuals'
 import { cn } from '@/lib/cn'
+import { estimatePrice } from '@/lib/domain/emergency'
+import { requestEvaluationAction } from '@/app/actions/urgent'
 
 export const metadata = { title: 'Detalle de solicitud' }
 
@@ -22,10 +24,12 @@ export default async function RequestDetail({ params, searchParams }: { params: 
   if (!uuidSchema.safeParse(params.id).success) notFound()
   const r = await getRequestForOwner(user, params.id)
   if (!r) notFound()
+  if (r.is_urgent && !r.order_id) redirect(`/cliente/emergencia/${r.id}`)
   const [quotes, category] = await Promise.all([listQuotesForRequest(r.id), getCategory(r.category_id)])
   const open = ['open', 'quoting'].includes(r.status)
   const prices = quotes.filter((q) => q.status === 'sent').map((q) => Number(q.price_amount))
   const minPrice = prices.length ? Math.min(...prices) : null
+  const estimate = category && !r.is_urgent ? estimatePrice(category.slug, `${r.title} ${r.description}`) : null
 
   return (
     <>
@@ -116,6 +120,17 @@ export default async function RequestDetail({ params, searchParams }: { params: 
               <PhotoGrid urls={r.photo_urls} alt="Foto de la solicitud" className="!grid-cols-2" />
             </div>
           </div>
+          {open && estimate && (
+            <div className="card card-pad">
+              <p className="font-display text-sm font-semibold">¿Cuánto debería costar?</p>
+              <p className="mt-1 font-num text-2xl font-semibold text-navy">{formatQ(String(estimate.min))} – {formatQ(String(estimate.max))}</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink3">Rango orientativo del estimador automático de Handyman (precios típicos de {r.category_name} en la ciudad{estimate.factors.length ? `, ajustado por: ${estimate.factors.join(', ')}` : ''}). No reemplaza la cotización.</p>
+              <ActionForm action={requestEvaluationAction} resetOnSuccess={false} className="mt-3">
+                <input type="hidden" name="request_id" value={r.id} />
+                <SubmitButton className="btn-secondary btn-sm w-full">Pedir evaluación a un técnico de Handyman</SubmitButton>
+              </ActionForm>
+            </div>
+          )}
           <div className="card card-pad">
             <p className="flex items-center gap-2 font-display text-sm font-semibold"><ShieldCheck className="h-4 w-4 text-ok" aria-hidden />Garantía de {category?.warranty_days ?? 30} días</p>
             <p className="mt-1.5 text-xs leading-relaxed text-ink2">Al aprobar el trabajo recibirás una garantía escrita según la política vigente de {r.category_name}.</p>

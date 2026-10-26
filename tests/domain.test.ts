@@ -126,3 +126,21 @@ describe('centro de soporte: tiempos de respuesta', async () => {
     expect(relativeTime(new Date(t0.getTime() - 15 * 60000), t0)).toBe('hace 15 min')
   })
 })
+
+describe('carril de urgencias y estimador', async () => {
+  const { EMERGENCIES, emergencyByKey, estimatePrice } = await import('@/lib/domain/emergency')
+  it('cada emergencia trae consejos y el gas no se despacha (lo atienden los bomberos)', () => {
+    for (const e of EMERGENCIES) expect(e.tips.length).toBeGreaterThanOrEqual(3)
+    expect(emergencyByKey('gas')?.categorySlug).toBeNull()
+    expect(emergencyByKey('fuga')?.categorySlug).toBe('plomeria')
+  })
+  it('estima un rango orientativo y lo ajusta según el relato', () => {
+    const base = estimatePrice('plomeria', 'Revisar un goteo pequeño')!
+    const big = estimatePrice('plomeria', 'Instalar tubería nueva en todo el baño')!
+    expect(base.min).toBeLessThan(big.min)
+    expect(base.factors).toContain('trabajo menor')
+    expect(big.factors).toContain('instalación nueva')
+    expect(base.min % 50).toBe(0)
+    expect(estimatePrice('oficio-inexistente', 'x')).toBeNull()
+  })
+})

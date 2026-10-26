@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Briefcase, ClipboardList, FileText, Plus, ShieldCheck, Sparkles, TriangleAlert } from 'lucide-react'
+import { Briefcase, CalendarPlus, ChevronRight, ClipboardList, FileText, ShieldCheck, Siren, Sparkles, TriangleAlert } from 'lucide-react'
 import { requireUser } from '@/lib/auth/session'
 import { listCustomerRequests } from '@/lib/services/requests'
 import { listOrders, listWarranties } from '@/lib/services/orders'
@@ -25,9 +25,20 @@ export default async function CustomerDashboard({ searchParams }: { searchParams
     <>
       <PageHeader
         title={`Hola, ${user.full_name.split(' ')[0]}`}
-        description="Este es el resumen de tus servicios."
-        action={<Link href="/cliente/solicitudes/nueva" className="btn-primary"><Plus className="h-4 w-4" aria-hidden />Solicitar servicio</Link>}
+        description="¿Qué necesitas hoy?"
       />
+      <div className="mb-6 grid gap-3 sm:grid-cols-2">
+        <Link href="/cliente/emergencia" className="group flex min-h-[124px] items-center gap-4 rounded-3xl bg-bad p-5 text-white shadow-lift transition-transform hover:-translate-y-0.5">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15"><Siren className="h-8 w-8" aria-hidden /></span>
+          <span className="min-w-0 flex-1"><span className="block font-display text-2xl font-bold">Emergencia</span><span className="block text-white/90">Fuga, corto, cerradura… ayuda ahora mismo</span></span>
+          <ChevronRight className="h-6 w-6 shrink-0" aria-hidden />
+        </Link>
+        <Link href="/cliente/solicitudes/nueva" className="group flex min-h-[124px] items-center gap-4 rounded-3xl bg-navy p-5 text-white shadow-lift transition-transform hover:-translate-y-0.5">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-accent"><CalendarPlus className="h-8 w-8" aria-hidden /></span>
+          <span className="min-w-0 flex-1"><span className="block font-display text-2xl font-bold">Planificar un trabajo</span><span className="block text-white/80">Recibe cotizaciones y elige con calma</span></span>
+          <ChevronRight className="h-6 w-6 shrink-0" aria-hidden />
+        </Link>
+      </div>
       {searchParams.bienvenida && (
         <div className="mb-6"><Notice tone="ok" icon={Sparkles} title="¡Tu cuenta está lista!">Publica tu primera solicitud y empieza a recibir cotizaciones de profesionales verificados.</Notice></div>
       )}

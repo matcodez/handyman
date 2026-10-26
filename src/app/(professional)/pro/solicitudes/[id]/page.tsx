@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { MessageCircle, CalendarDays, CircleCheck, Lock, MapPin, Send, Undo2 } from 'lucide-react'
+import { MessageCircle, CalendarDays, CircleCheck, Lock, MapPin, Send, Siren, Undo2 } from 'lucide-react'
 import { requireUser } from '@/lib/auth/session'
 import { formatDate, formatQ, timeAgo, todayGT } from '@/lib/format'
 import { QUOTE } from '@/lib/domain/states'
@@ -10,6 +10,8 @@ import { getRequestForPro } from '@/lib/services/requests'
 import { openQuoteChatAction } from '@/app/actions/messaging'
 import { getMyQuote } from '@/lib/services/quotes'
 import { createQuoteAction, withdrawQuoteAction } from '@/app/actions/pro'
+import { acceptEmergencyAction } from '@/app/actions/urgent'
+import { ETA_OPTIONS } from '@/lib/domain/emergency'
 import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { Notice, PageHeader } from '@/components/ui/primitives'
 import { PhotoGrid, StatusBadge } from '@/components/domain/visuals'
@@ -54,7 +56,29 @@ export default async function ProRequestDetail({ params, searchParams }: { param
         </div>
 
         <aside>
-          {quote ? (
+          {r.is_urgent && open ? (
+            <section className="card overflow-hidden ring-2 ring-bad">
+              <div className="bg-bad px-5 py-4 text-white">
+                <p className="flex items-center gap-2 font-display text-lg font-semibold"><Siren className="h-5 w-5 animate-pulse" aria-hidden />Emergencia</p>
+                <p className="text-sm text-white/90">Visita de diagnóstico: <span className="font-num font-semibold">{formatQ(r.visit_fee ?? '0')}</span> precio fijo</p>
+              </div>
+              <ActionForm action={acceptEmergencyAction} resetOnSuccess={false} className="space-y-4 p-5" confirm="¿Tomas esta emergencia? Te comprometes a salir de inmediato.">
+                <input type="hidden" name="request_id" value={r.id} />
+                <fieldset>
+                  <legend className="label">¿En cuánto tiempo llegas?</legend>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ETA_OPTIONS.map((m, i) => (
+                      <label key={m} className="flex cursor-pointer items-center justify-center rounded-xl border border-line py-2.5 font-num text-sm has-[:checked]:border-bad has-[:checked]:bg-bad-bg has-[:checked]:font-semibold">
+                        <input type="radio" name="eta" value={m} defaultChecked={i === 1} className="sr-only" />{m} min
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+                <p className="text-sm text-ink2">Al llegar, revisa y envía el presupuesto del trabajo desde la orden (“Solicitar modificación”). El cliente lo aprueba antes de empezar.</p>
+                <SubmitButton className="h-12 w-full rounded-xl bg-bad font-display font-semibold text-white hover:bg-bad/90" pendingText="Tomando…">Aceptar emergencia</SubmitButton>
+              </ActionForm>
+            </section>
+          ) : quote ? (
             <section className="card card-pad space-y-3">
               <div className="flex items-center justify-between gap-2"><h2 className="text-base font-semibold">Tu cotización</h2><StatusBadge map={QUOTE} status={quote.status} /></div>
               <p className="font-num text-3xl font-semibold">{formatQ(quote.price_amount)}</p>

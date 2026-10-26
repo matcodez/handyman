@@ -1,5 +1,5 @@
 import 'server-only'
-import { db, tx } from '@/lib/db/client'
+import { db, tx, type Exec } from '@/lib/db/client'
 import { AppError } from '@/lib/errors'
 import type { SessionUser } from '@/lib/auth/session'
 import type { QuoteStatus, RequestStatus, VerificationStatus } from '@/lib/domain/states'
@@ -60,6 +60,7 @@ export async function createQuote(
   if (!req) throw new AppError('Esta solicitud no está disponible para ti.')
   if (!['open', 'quoting'].includes(req.status)) throw new AppError('La solicitud ya no recibe cotizaciones.')
   if (req.my_quote_id) throw new AppError('Ya enviaste una cotización para esta solicitud.')
+  if (req.is_urgent) throw new AppError('Las emergencias no se cotizan: tómala con “Aceptar emergencia” e indica tu tiempo de llegada.')
 
   return tx(async (t) => {
     const row = await t.q1<{ id: string }>(
@@ -127,13 +128,49 @@ export function getMyQuote(proId: string, requestId: string) {
   return db.q1<QuoteRow>(`select ${QUOTE_COLS} from quotes q where q.professional_id = $1 and q.request_id = $2`, [proId, requestId])
 }
 
+/** Crea la orden con copia congelada del alcance y retiene el pago (DEMO). Compartido con el carril de urgencias. */
+export async function insertOrder(
+  t: Exec,
+  q: QuoteRow & { request_title: string; category_name: string },
+  customerId: string,
+  opts: { status?: 'scheduled' | 'en_route'; isUrgent?: boolean; etaMinutes?: number } = {},
+) {
+  const provider = getPaymentProvider()
+  const snapshot = {
+    title: q.request_title,
+    category: q.category_name,
+    scope_description: q.scope_description,
+    materials_included: q.materials_included,
+    materials_notes: q.materials_notes,
+    estimated_duration: q.estimated_duration,
+    notes: q.notes,
+    quoted_price: q.price_amount,
+    accepted_at: new Date().toISOString(),
+  }
+  const order = await t.q1<{ id: string; order_number: string }>(
+    `insert into orders (order_number, request_id, accepted_quote_id, customer_id, professional_id,
+                         agreed_price, agreed_scope_snapshot, scheduled_at, status, en_route_at, is_urgent, eta_minutes, eta_at)
+     values ($1,$2,$3,$4,$5,$6::numeric,$7,$8,$9, case when $9::text = 'en_route' then now() end, $10, $11::int,
+             case when $11::int is null then null else now() + make_interval(mins => $11::int) end)
+     returning id, order_number`,
+    [publicCode('HM'), q.request_id, q.id, customerId, q.professional_id, q.price_amount, snapshot, q.proposed_date,
+      opts.status ?? 'scheduled', opts.isUrgent ?? false, opts.etaMinutes ?? null],
+  )
+  const hold = await provider.hold({ orderId: order!.id, amount: q.price_amount, currency: 'GTQ' })
+  await t.q(
+    `insert into payments (order_id, amount, currency, status, provider, provider_reference, is_demo)
+     values ($1,$2::numeric,'GTQ',$3,$4,$5,$6)`,
+    [order!.id, q.price_amount, hold.status, provider.name, hold.reference, provider.isDemo],
+  )
+  return { order: order!, hold }
+}
+
 /**
  * El cliente acepta UNA cotización: la solicitud pasa a "Contratada", se crea la orden con
  * una copia congelada del precio y el alcance, y se registra el pago retenido (DEMO).
  */
 export async function acceptQuote(actor: SessionUser, quoteId: string) {
   if (actor.role !== 'customer') throw new AppError('Solo el cliente puede aceptar una cotización.')
-  const provider = getPaymentProvider()
   return tx(async (t) => {
     const q = await t.q1<
       QuoteRow & { customer_id: string; request_status: RequestStatus; request_title: string; category_name: string
@@ -159,41 +196,19 @@ export async function acceptQuote(actor: SessionUser, quoteId: string) {
     )
     await t.q(`update service_requests set status = 'hired' where id = $1`, [q.request_id])
 
-    const snapshot = {
-      title: q.request_title,
-      category: q.category_name,
-      scope_description: q.scope_description,
-      materials_included: q.materials_included,
-      materials_notes: q.materials_notes,
-      estimated_duration: q.estimated_duration,
-      notes: q.notes,
-      quoted_price: q.price_amount,
-      accepted_at: new Date().toISOString(),
-    }
-    const order = await t.q1<{ id: string; order_number: string }>(
-      `insert into orders (order_number, request_id, accepted_quote_id, customer_id, professional_id,
-                           agreed_price, agreed_scope_snapshot, scheduled_at, status)
-       values ($1,$2,$3,$4,$5,$6::numeric,$7,$8,'scheduled') returning id, order_number`,
-      [publicCode('HM'), q.request_id, quoteId, actor.id, q.professional_id, q.price_amount, snapshot, q.proposed_date],
-    )
-    const hold = await provider.hold({ orderId: order!.id, amount: q.price_amount, currency: 'GTQ' })
-    await t.q(
-      `insert into payments (order_id, amount, currency, status, provider, provider_reference, is_demo)
-       values ($1,$2::numeric,'GTQ',$3,$4,$5,$6)`,
-      [order!.id, q.price_amount, hold.status, provider.name, hold.reference, provider.isDemo],
-    )
+    const { order, hold } = await insertOrder(t, q, actor.id)
 
-    await postOrderEvent(t, order!.id, `🤝 Orden ${order!.order_number} creada por Q ${q.price_amount}. Usen este chat para coordinar la visita; aquí también aparecerán los avisos del servicio.`)
+    await postOrderEvent(t, order.id, `🤝 Orden ${order.order_number} creada por Q ${q.price_amount}. Usen este chat para coordinar la visita; aquí también aparecerán los avisos del servicio.`)
     await notify(t, q.professional_id, {
-      type: 'quote.accepted', title: '¡Aceptaron tu cotización!', body: `${q.request_title} · Orden ${order!.order_number}`,
-      href: `/pro/ordenes/${order!.id}`,
+      type: 'quote.accepted', title: '¡Aceptaron tu cotización!', body: `${q.request_title} · Orden ${order.order_number}`,
+      href: `/pro/ordenes/${order.id}`,
     })
     for (const o of others) {
       await notify(t, o.professional_id, { type: 'quote.rejected', title: 'Cotización no seleccionada', body: q.request_title, href: '/pro/cotizaciones' })
     }
-    await audit(t, actor.id, 'quote.accepted', 'quote', quoteId, { order_id: order!.id, price: q.price_amount })
-    await audit(t, actor.id, 'order.created', 'order', order!.id, { order_number: order!.order_number, agreed_price: q.price_amount })
-    await audit(t, actor.id, 'payment.held_demo', 'order', order!.id, { amount: q.price_amount, reference: hold.reference, demo: true })
-    return order!.id
+    await audit(t, actor.id, 'quote.accepted', 'quote', quoteId, { order_id: order.id, price: q.price_amount })
+    await audit(t, actor.id, 'order.created', 'order', order.id, { order_number: order.order_number, agreed_price: q.price_amount })
+    await audit(t, actor.id, 'payment.held_demo', 'order', order.id, { amount: q.price_amount, reference: hold.reference, demo: true })
+    return order.id
   })
 }

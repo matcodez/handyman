@@ -18,12 +18,19 @@ export default async function ProRequests() {
     return (<><PageHeader title="Solicitudes" /><VerificationGate status={pro.verification_status} note={pro.verification_note} /></>)
   }
   const list = await listOpenRequestsForPro(user.id)
-  const fresh = list.filter((r) => !r.my_quote_id)
+  const urgent = list.filter((r) => r.is_urgent && r.status === 'open')
+  const fresh = list.filter((r) => !r.my_quote_id && !r.is_urgent)
   const quoted = list.filter((r) => r.my_quote_id)
   return (
     <>
       <PageHeader title="Solicitudes compatibles" description={`Trabajos abiertos de tus oficios en tus zonas de cobertura (${pro.service_area.join(', ')}). Solo ves la zona aproximada hasta que te contraten.`} />
-      <Section title={`Por cotizar (${fresh.length})`} className="mt-0">
+      {urgent.length > 0 && (
+        <Section title={`🚨 Emergencias cerca (${urgent.length})`} className="mt-0">
+          <p className="-mt-1 mb-3 text-sm text-ink2">Visita de diagnóstico a precio fijo. El primero que acepta la toma: indica en cuánto llegas.</p>
+          <div className="space-y-3">{urgent.map((r) => <div key={r.id} className="rounded-2xl ring-2 ring-bad"><RequestCard r={r} href={`/pro/solicitudes/${r.id}`} /></div>)}</div>
+        </Section>
+      )}
+      <Section title={`Por cotizar (${fresh.length})`} className={urgent.length ? undefined : 'mt-0'}>
         {fresh.length === 0 ? (
           <EmptyState icon={Inbox} title="No hay solicitudes nuevas" description="Amplía tus oficios o zonas de cobertura en tu perfil para ver más oportunidades." />
         ) : (

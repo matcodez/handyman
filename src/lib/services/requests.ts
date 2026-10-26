@@ -22,6 +22,8 @@ export interface RequestRow {
   created_at: Date
   quotes_count: number
   order_id: string | null
+  is_urgent: boolean
+  visit_fee: string | null
 }
 
 // Columnas seguras para cualquier lector autorizado: NO incluyen address_private.
@@ -30,7 +32,7 @@ const SAFE_COLS = `
   r.title, r.description, r.photo_urls, r.place_type, r.location_label,
   r.preferred_date::text as preferred_date, r.preferred_time_window, r.status, r.created_at,
   (select count(*)::int from quotes qq where qq.request_id = r.id and qq.status in ('sent','accepted','rejected')) as quotes_count,
-  (select o.id from orders o where o.request_id = r.id) as order_id`
+  (select o.id from orders o where o.request_id = r.id) as order_id, r.is_urgent, r.visit_fee::text as visit_fee`
 
 // Un profesional solo ve solicitudes abiertas de sus oficios y zonas, y únicamente si está aprobado.
 const PRO_CAN_SEE = `
@@ -119,7 +121,7 @@ export function listOpenRequestsForPro(proId: string) {
      join users u on u.id = r.customer_id
      left join quotes mq on mq.request_id = r.id and mq.professional_id = $1
      where r.status in ('open','quoting') and ${PRO_CAN_SEE}
-     order by r.created_at desc`,
+     order by r.is_urgent desc, r.created_at desc`,
     [proId],
   )
 }

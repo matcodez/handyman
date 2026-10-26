@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import {
   BadgeCheck, CalendarDays, Camera, CircleCheck, Clock, FilePen, Hourglass, Lock, MapPin, Package, PackageX, Phone, Play, ScanLine,
-  ShieldCheck, Star, TriangleAlert, Truck, MessageCircle, LifeBuoy,
-} from 'lucide-react'
+  ShieldCheck, Star, TriangleAlert, Truck, MessageCircle, LifeBuoy, Siren } from 'lucide-react'
 import { formatDate, formatDateTime, formatQ } from '@/lib/format'
 import { CASE, DISPUTE_REASONS, ORDER } from '@/lib/domain/states'
 import type { OrderRow, getOrderExtras } from '@/lib/services/orders'
@@ -65,6 +64,13 @@ export async function OrderDetail({ o, x, viewer, back, banner }: { o: OrderRow;
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="min-w-0 space-y-5">
+          {o.is_urgent && ['scheduled', 'en_route', 'arrived', 'in_progress'].includes(o.status) && (
+            <Notice tone="bad" icon={Siren} title={o.status === 'en_route' && o.eta_at ? `Emergencia · llegada estimada ${new Intl.DateTimeFormat('es-GT', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Guatemala' }).format(new Date(o.eta_at))}` : 'Emergencia'}>
+              {viewer === 'professional'
+                ? 'Al revisar, envía el presupuesto del trabajo con “Solicitar modificación”: el cliente debe aprobarlo antes de que empieces la reparación.'
+                : 'El precio actual es la visita de diagnóstico. En sitio, el profesional te enviará el presupuesto del trabajo aquí y solo se hace si lo apruebas.'}
+            </Notice>
+          )}
           {/* ── Acciones del cliente ── */}
           {viewer === 'customer' && preArrival && (
             <section className="card overflow-hidden">

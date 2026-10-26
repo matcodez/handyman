@@ -114,6 +114,8 @@ async function init(): Promise<Driver> {
       ['data:003_demo_pros_por_area', async () => (await import('./seed-pros')).seedDemoProsByArea(t)],
       ['data:005_conversaciones_demo', async () => (await import('./seed-chat')).seedDemoConversations(t)],
       ['data:006_centro_de_soporte', async () => (await import('./seed-support')).seedSupportCenter(t)],
+      // Profesionales demo disponibles ahora para emergencias (sin hora de fin, para que la demo siempre funcione).
+      ['data:007_disponibles_ahora', async () => { await t.query(`update professional_profiles set available_now = true where user_id in (select id from users where email in ('plomero@handyman.demo','electricista@handyman.demo','cerrajeria@handyman.demo','vidrio@handyman.demo'))`) }],
     ]
     for (const [name, run] of dataMigrations) {
       if (applied.has(name)) continue

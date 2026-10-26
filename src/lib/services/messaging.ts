@@ -117,27 +117,32 @@ export async function openQuoteConversation(actor: SessionUser, requestId: strin
 }
 
 /** "Pregúntale a Handyman": una conversación de soporte abierta por usuario (y opcionalmente ligada a una orden). */
-export async function openSupportConversation(actor: SessionUser, opts: { orderId?: string; subject?: string } = {}) {
+export async function openSupportConversation(actor: SessionUser, opts: { orderId?: string; requestId?: string; subject?: string; intro?: string } = {}) {
   if (actor.role === 'admin') throw new AppError('Administración atiende las conversaciones de soporte desde su bandeja.')
   return tx(async (t) => {
     const found = await t.q1<{ id: string }>(
       `select id from conversations where kind = 'support' and owner_id = $1 and status = 'open'
          and coalesce(order_id::text, '') = coalesce($2::text, '')
+         and coalesce(request_id::text, '') = coalesce($3::text, '')
          and not exists (select 1 from support_cases s where s.conversation_id = conversations.id)
        order by created_at desc limit 1`,
-      [actor.id, opts.orderId ?? null],
+      [actor.id, opts.orderId ?? null, opts.requestId ?? null],
     )
     if (found) return found.id
+    if (opts.requestId) {
+      const r = await t.q1(`select 1 from service_requests where id = $1 and customer_id = $2`, [opts.requestId, actor.id])
+      if (!r) throw new AppError('Solicitud no encontrada.')
+    }
     if (opts.orderId) {
       const o = await t.q1(`select 1 from orders where id = $1 and (customer_id = $2 or professional_id = $2)`, [opts.orderId, actor.id])
       if (!o) throw new AppError('Orden no encontrada.')
     }
     const c = await t.q1<{ id: string }>(
-      `insert into conversations (kind, owner_id, order_id, subject) values ('support',$1,$2,$3) returning id`,
-      [actor.id, opts.orderId ?? null, opts.subject ?? 'Consulta con Handyman'],
+      `insert into conversations (kind, owner_id, order_id, request_id, subject) values ('support',$1,$2,$3,$4) returning id`,
+      [actor.id, opts.orderId ?? null, opts.requestId ?? null, opts.subject ?? 'Consulta con Handyman'],
     )
     await addParticipant(t, c!.id, actor.id, actor.role === 'professional' ? 'professional' : 'customer')
-    await postSystemMessage(t, c!.id, `¡Hola! Soy el equipo de Handyman. Cuéntanos tu consulta y te respondemos aquí mismo. También puedes llamarnos al ${SUPPORT_PHONE} (línea de demostración).`)
+    await postSystemMessage(t, c!.id, opts.intro ?? `¡Hola! Soy el equipo de Handyman. Cuéntanos tu consulta y te respondemos aquí mismo. También puedes llamarnos al ${SUPPORT_PHONE} (línea de demostración).`)
     return c!.id
   })
 }

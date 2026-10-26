@@ -56,6 +56,9 @@ export interface OrderRow {
   payment_status: PaymentStatus
   payment_reference: string | null
   payment_is_demo: boolean
+  is_urgent: boolean
+  eta_at: Date | null
+  eta_minutes: number | null
 }
 
 const ORDER_SELECT = `
@@ -66,7 +69,8 @@ const ORDER_SELECT = `
          p.public_name as pro_name, pu.avatar_url as pro_avatar, pu.phone as pro_phone,
          p.verification_status as pro_verification, p.qr_token as pro_qr_token,
          r.category_id, c.name as category_name, r.location_label, r.address_private, r.preferred_time_window, r.place_type,
-         pay.status as payment_status, pay.provider_reference as payment_reference, pay.is_demo as payment_is_demo
+         pay.status as payment_status, pay.provider_reference as payment_reference, pay.is_demo as payment_is_demo,
+         o.is_urgent, o.eta_at, o.eta_minutes
   from orders o
   join users cu on cu.id = o.customer_id
   join users pu on pu.id = o.professional_id

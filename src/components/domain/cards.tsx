@@ -45,7 +45,7 @@ export function RequestCard({ r, href }: { r: RequestRow; href: string }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="truncate font-display text-[15px] font-semibold text-ink group-hover:text-brand">{r.title}</h3>
-          <StatusBadge map={REQUEST} status={r.status} />
+          {r.is_urgent ? <Badge tone="bad">🚨 Emergencia</Badge> : <StatusBadge map={REQUEST} status={r.status} />}
         </div>
         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-ink2">
           <span>{r.category_name}</span>

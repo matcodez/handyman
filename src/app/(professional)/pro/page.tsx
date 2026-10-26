@@ -10,6 +10,8 @@ import { EmptyState, PageHeader, Section, Stat } from '@/components/ui/primitive
 import { OrderCard, QrBadge, RequestCard } from '@/components/domain/cards'
 import { Stars, VerificationBadge } from '@/components/domain/visuals'
 import { VerificationGate } from './verification-gate'
+import { getAvailability } from '@/lib/services/urgent'
+import { AvailabilityCard } from '@/components/domain/availability-card'
 
 export const metadata = { title: 'Panel profesional' }
 
@@ -18,10 +20,11 @@ export default async function ProDashboard() {
   const pro = await getProProfile(user.id)
   if (!pro) notFound()
   const approved = pro.verification_status === 'approved'
-  const [requests, quotes, orders] = await Promise.all([
-    approved ? listOpenRequestsForPro(user.id) : Promise.resolve([]), listProQuotes(user.id), listOrders(user),
+  const [requests, quotes, orders, availability] = await Promise.all([
+    approved ? listOpenRequestsForPro(user.id) : Promise.resolve([]), listProQuotes(user.id), listOrders(user), getAvailability(user.id),
   ])
-  const fresh = requests.filter((r) => !r.my_quote_id)
+  const urgent = requests.filter((r) => r.is_urgent && r.status === 'open')
+  const fresh = requests.filter((r) => !r.my_quote_id && !r.is_urgent)
   const pendingQuotes = quotes.filter((q) => q.status === 'sent')
   const active = orders.filter((o) => ['scheduled', 'en_route', 'arrived', 'in_progress', 'pending_approval', 'disputed'].includes(o.status))
 
@@ -29,6 +32,7 @@ export default async function ProDashboard() {
     <>
       <PageHeader title={`Hola, ${user.full_name.split(' ')[0]}`} description={<span className="flex flex-wrap items-center gap-2"><VerificationBadge status={pro.verification_status} /><Stars value={pro.rating_average} count={pro.reviews_count} /></span>} action={<Link href={`/profesionales/${user.id}`} className="btn-secondary">Ver mi perfil público</Link>} />
       <div className="mb-6"><VerificationGate status={pro.verification_status} note={pro.verification_note} /></div>
+      {approved && <div className="mb-6"><AvailabilityCard on={availability.available_now} until={availability.available_until} urgent={urgent} /></div>}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat icon={Inbox} label="Solicitudes nuevas" value={fresh.length} tone="warn" href="/pro/solicitudes" />

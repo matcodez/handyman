@@ -9,6 +9,8 @@ import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { logoutAction } from '@/app/actions/auth'
 import { Avatar, Logo } from '@/components/domain/visuals'
 import { BottomNav, SidebarNav, type NavItem } from './nav-links'
+import { TextSizeToggle } from '@/components/ui/text-size-toggle'
+import { Tutorial } from '@/components/domain/tutorial'
 
 /** Marco de la aplicación autenticada: sidebar navy en escritorio (como WPOS) y barra inferior tipo app en móvil. */
 export async function AppShell({ user, items: baseItems, children }: { user: SessionUser; items: NavItem[]; children: React.ReactNode }) {
@@ -61,6 +63,7 @@ export async function AppShell({ user, items: baseItems, children }: { user: Ses
               </SubmitButton>
             </ActionForm>
           )}
+          <TextSizeToggle />
           {bell}
           <form action={logoutAction} className="lg:hidden">
             <button type="submit" aria-label="Cerrar sesión" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-white/10"><LogOut className="h-5 w-5" aria-hidden /></button>
@@ -70,6 +73,7 @@ export async function AppShell({ user, items: baseItems, children }: { user: Ses
 
       <main id="contenido" className="mx-auto w-full max-w-5xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-16 lg:pt-8">{children}</main>
       <BottomNav items={items} />
+      {user.role !== 'admin' && <Tutorial role={user.role} name={user.full_name.split(' ')[0]} />}
     </div>
   )
 }

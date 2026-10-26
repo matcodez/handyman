@@ -41,7 +41,9 @@ export function Stepper({ steps, children, submit }: { steps: string[]; children
       <p className="mb-4 font-display text-sm text-ink3 sm:hidden">Paso {step + 1} de {steps.length}: <span className="font-semibold text-ink">{steps[step]}</span></p>
 
       {panels.map((p, i) => (
-        <div key={i} data-step={i} hidden={i !== step} className="card card-pad space-y-5">{p}</div>
+        // En el primer paso basta un toque: al elegir el oficio se avanza solo.
+        <div key={i} data-step={i} hidden={i !== step} className="card card-pad space-y-5"
+          onChange={i === 0 ? (e) => { if ((e.target as HTMLInputElement).type === 'radio') setTimeout(next, 200) } : undefined}>{p}</div>
       ))}
 
       <div className="mt-5 flex items-center justify-between gap-3">

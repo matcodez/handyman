@@ -10,6 +10,8 @@
 
 @layer base {
   html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  /* Letra grande: amplía todo el contenido de la aplicación de forma proporcional (textos, botones e íconos). */
+  html.texto-grande #contenido { zoom: 1.15; }
   body {
     @apply bg-paper text-ink antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;

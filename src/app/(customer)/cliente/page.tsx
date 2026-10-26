@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { TutorialButton } from '@/components/domain/tutorial'
 import { Briefcase, CalendarPlus, ChevronRight, ClipboardList, FileText, ShieldCheck, Siren, Sparkles, TriangleAlert } from 'lucide-react'
 import { requireUser } from '@/lib/auth/session'
 import { listCustomerRequests } from '@/lib/services/requests'
@@ -85,6 +86,7 @@ export default async function CustomerDashboard({ searchParams }: { searchParams
           ))}
         </ul>
       </Section>
+      <p className="mt-8 text-center"><TutorialButton /></p>
     </>
   )
 }

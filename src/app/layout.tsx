@@ -26,7 +26,11 @@ export const maxDuration = 60
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${poppins.variable} ${ibm.variable} ${outfit.variable}`}>
+    <html lang="es" className={`${poppins.variable} ${ibm.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Aplica la preferencia de "letra grande" antes de pintar, para evitar un salto visual. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('hm-texto-grande')==='1')document.documentElement.classList.add('texto-grande')}catch(e){}" }} />
+      </head>
       <body className="font-sans">
         <a href="#contenido" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow-lift">
           Saltar al contenido

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { TutorialButton } from '@/components/domain/tutorial'
 import { notFound } from 'next/navigation'
 import { Briefcase, FileText, Inbox, Star } from 'lucide-react'
 import { requireUser } from '@/lib/auth/session'
@@ -66,6 +67,7 @@ export default async function ProDashboard() {
           </Section>
         )}
       </div>
+      <p className="mt-8 text-center"><TutorialButton /></p>
     </>
   )
 }

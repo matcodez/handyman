@@ -10,6 +10,9 @@ import { PageHeader } from '@/components/ui/primitives'
 import { PhotoInput } from '@/components/domain/photo-input'
 import { CategoryIcon } from '@/components/domain/visuals'
 import { Stepper } from './stepper'
+import { DictateButton } from '@/components/domain/dictate-button'
+import { QuickDate } from '@/components/domain/quick-date'
+import { HelpTip } from '@/components/ui/help-tip'
 
 export const metadata = { title: 'Nueva solicitud' }
 
@@ -28,7 +31,7 @@ export default async function NewRequestPage({ searchParams }: { searchParams: {
           submit={<SubmitButton pendingText="Publicando…"><Send className="h-4 w-4" aria-hidden />Publicar solicitud</SubmitButton>}
         >
           <fieldset>
-            <legend className="text-lg font-semibold">¿Qué tipo de trabajo necesitas?</legend>
+            <legend className="flex items-center gap-2 text-lg font-semibold">¿Qué tipo de trabajo necesitas? <HelpTip title="¿No sabes cuál elegir?">Elige el más parecido. Si te equivocas, un técnico de Handyman puede revisarlo y orientarte desde tu solicitud. Si es urgente (fuga, corto, puerta), usa mejor el botón rojo <strong>Emergencia</strong>.</HelpTip></legend>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {categories.map((c, i) => (
                 <label key={c.id} className="flex cursor-pointer items-center gap-2.5 rounded-xl border-2 border-line bg-white p-3 transition-colors hover:border-line2 has-[:checked]:border-brand has-[:checked]:bg-brand-bg/60">
@@ -46,7 +49,10 @@ export default async function NewRequestPage({ searchParams }: { searchParams: {
               <input id="title" name="title" required minLength={6} maxLength={90} className="input" placeholder="Ej.: Fuga de agua bajo el lavamanos" />
             </div>
             <div>
-              <label className="label" htmlFor="description">Describe el problema</label>
+              <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                <label className="label !mb-0" htmlFor="description">Describe el problema</label>
+                <DictateButton target="description" />
+              </div>
               <textarea id="description" name="description" required minLength={20} maxLength={1500} className="input" placeholder="Qué pasa, desde cuándo, medidas aproximadas, materiales que ya tienes…" aria-describedby="desc-hint" />
               <p id="desc-hint" className="hint">Mínimo 20 caracteres. Entre más detalle, más precisa será la cotización.</p>
             </div>
@@ -73,7 +79,7 @@ export default async function NewRequestPage({ searchParams }: { searchParams: {
               <p className="hint">Es lo único que verán los profesionales antes de que contrates.</p>
             </div>
             <div>
-              <label className="label" htmlFor="address_private">Dirección exacta</label>
+              <label className="label flex items-center gap-1.5" htmlFor="address_private">Dirección exacta <HelpTip title="¿Quién ve mi dirección?">Antes de contratar, los profesionales solo ven tu zona. La dirección exacta la ve únicamente el profesional que tú elijas.</HelpTip></label>
               <input id="address_private" name="address_private" required minLength={8} maxLength={200} defaultValue={home?.address_private ?? ''} className="input" placeholder="Calle, número, edificio, apartamento, referencias" />
               <p className="hint flex items-start gap-1.5"><Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />Privada: solo la verá el profesional que contrates.</p>
               {addresses.length > 1 && <p className="hint">Tienes {addresses.length} direcciones guardadas en tu perfil; se precargó “{home.label}”.</p>}
@@ -82,7 +88,8 @@ export default async function NewRequestPage({ searchParams }: { searchParams: {
 
           <>
             <div>
-              <label className="label" htmlFor="preferred_date">Fecha preferida</label>
+              <label className="label" htmlFor="preferred_date">¿Cuándo te queda bien?</label>
+              <QuickDate target="preferred_date" today={todayGT()} />
               <input id="preferred_date" name="preferred_date" type="date" required min={todayGT()} className="input" />
             </div>
             <fieldset>

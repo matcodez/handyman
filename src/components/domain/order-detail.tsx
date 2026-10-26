@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import {
   BadgeCheck, CalendarDays, Camera, CircleCheck, Clock, FilePen, Hourglass, Lock, MapPin, Package, PackageX, Phone, Play, ScanLine,
-  ShieldCheck, Star, TriangleAlert, Truck,
+  ShieldCheck, Star, TriangleAlert, Truck, MessageCircle, LifeBuoy,
 } from 'lucide-react'
 import { formatDate, formatDateTime, formatQ } from '@/lib/format'
 import { CASE, DISPUTE_REASONS, ORDER } from '@/lib/domain/states'
 import type { OrderRow, getOrderExtras } from '@/lib/services/orders'
 import { approveOrderAction, disputeAction, resolveChangeAction, reviewAction } from '@/app/actions/customer'
 import { completeOrderAction, orderStepAction, requestChangeAction } from '@/app/actions/pro'
+import { openSupportChatAction } from '@/app/actions/messaging'
 import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { Badge, DefList, Notice, PageHeader } from '@/components/ui/primitives'
 import { OrderTimeline, PaymentBadge, QrBadge, WarrantyCard } from './cards'
@@ -294,6 +295,16 @@ export async function OrderDetail({ o, x, viewer, back, banner }: { o: OrderRow;
         </div>
 
         <aside className="space-y-4">
+          <div className="card card-pad space-y-2.5">
+            <Link href={`/mensajes/orden/${o.id}`} className="btn-primary w-full"><MessageCircle className="h-4 w-4" aria-hidden />{viewer === 'admin' ? 'Ver chat de la orden' : `Chatear con ${viewer === 'customer' ? o.pro_name.split(' ·')[0] : o.customer_name.split(' ')[0]}`}</Link>
+            {viewer !== 'admin' && (
+              <ActionForm action={openSupportChatAction} resetOnSuccess={false}>
+                <input type="hidden" name="order_id" value={o.id} />
+                <input type="hidden" name="subject" value={`Ayuda con la orden ${o.order_number}`} />
+                <SubmitButton className="btn-secondary w-full" pendingText="Abriendo…"><LifeBuoy className="h-4 w-4" aria-hidden />Necesito ayuda con esta orden</SubmitButton>
+              </ActionForm>
+            )}
+          </div>
           <div className="card card-pad">
             <p className="text-xs uppercase tracking-wide text-ink3">Precio acordado</p>
             <p className="mt-1 font-num text-3xl font-semibold">{formatQ(o.agreed_price)}</p>

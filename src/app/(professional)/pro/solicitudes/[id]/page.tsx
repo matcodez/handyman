@@ -1,18 +1,18 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { CalendarDays, CircleCheck, Lock, MapPin, Send, Undo2 } from 'lucide-react'
+import { MessageCircle, CalendarDays, CircleCheck, Lock, MapPin, Send, Undo2 } from 'lucide-react'
 import { requireUser } from '@/lib/auth/session'
 import { formatDate, formatQ, timeAgo, todayGT } from '@/lib/format'
 import { QUOTE } from '@/lib/domain/states'
 import { uuidSchema } from '@/lib/validation/schemas'
 import { getProProfile } from '@/lib/services/professionals'
-import { getRequestForPro, listMessages } from '@/lib/services/requests'
+import { getRequestForPro } from '@/lib/services/requests'
+import { openQuoteChatAction } from '@/app/actions/messaging'
 import { getMyQuote } from '@/lib/services/quotes'
 import { createQuoteAction, withdrawQuoteAction } from '@/app/actions/pro'
 import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { Notice, PageHeader } from '@/components/ui/primitives'
 import { PhotoGrid, StatusBadge } from '@/components/domain/visuals'
-import { QaThread } from '@/components/domain/qa-thread'
 import { VerificationGate } from '../../verification-gate'
 
 export const metadata = { title: 'Solicitud' }
@@ -25,7 +25,7 @@ export default async function ProRequestDetail({ params, searchParams }: { param
   if (pro.verification_status !== 'approved') return (<><PageHeader title="Solicitud" /><VerificationGate status={pro.verification_status} note={pro.verification_note} /></>)
   const r = await getRequestForPro(user.id, params.id)
   if (!r) notFound()
-  const [messages, quote] = await Promise.all([listMessages(r.id), getMyQuote(user.id, r.id)])
+  const quote = await getMyQuote(user.id, r.id)
   const open = ['open', 'quoting'].includes(r.status)
 
   return (
@@ -44,7 +44,13 @@ export default async function ProRequestDetail({ params, searchParams }: { param
             <p className="flex items-center gap-1.5 text-xs text-ink3"><Lock className="h-3.5 w-3.5" aria-hidden />La dirección exacta se comparte solo si el cliente acepta tu cotización.</p>
             <PhotoGrid urls={r.photo_urls} alt="Foto del problema" />
           </section>
-          <QaThread requestId={r.id} messages={messages} viewerId={user.id} canPost={open} />
+          {open && (
+            <ActionForm action={openQuoteChatAction} className="card card-pad flex flex-wrap items-center justify-between gap-3">
+              <input type="hidden" name="request_id" value={r.id} />
+              <div><p className="font-display font-semibold">¿Tienes dudas antes de cotizar?</p><p className="text-sm text-ink2">Escríbele al cliente por el chat de Handyman. Los teléfonos se comparten al contratar.</p></div>
+              <SubmitButton className="btn-secondary" pendingText="Abriendo…"><MessageCircle className="h-4 w-4" aria-hidden />Escribir al cliente</SubmitButton>
+            </ActionForm>
+          )}
         </div>
 
         <aside>

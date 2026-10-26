@@ -3,14 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Briefcase, ClipboardList, FileText, FolderCog, History, Inbox, LayoutDashboard, LifeBuoy, ScrollText, ShieldCheck, User, UserCheck, Users,
+  Briefcase, ClipboardList, MessageCircle, FileText, FolderCog, History, Inbox, LayoutDashboard, LifeBuoy, ScrollText, ShieldCheck, User, UserCheck, Users,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 const ICONS: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard, requests: ClipboardList, orders: Briefcase, warranty: ShieldCheck, user: User, inbox: Inbox, quotes: FileText,
-  verify: UserCheck, history: History, pros: UserCheck, categories: FolderCog, cases: LifeBuoy, users: Users, audit: ScrollText,
+  verify: UserCheck, messages: MessageCircle, history: History, pros: UserCheck, categories: FolderCog, cases: LifeBuoy, users: Users, audit: ScrollText,
 }
 
 export interface NavItem { href: string; label: string; short?: string; icon: string; badge?: number; exact?: boolean }

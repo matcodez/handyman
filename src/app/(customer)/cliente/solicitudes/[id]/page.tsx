@@ -1,18 +1,18 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { BadgeCheck, CalendarDays, CircleCheck, Clock, FileText, Images, Lock, MapPin, Package, PackageX, ShieldCheck, X } from 'lucide-react'
+import { MessageCircle, BadgeCheck, CalendarDays, CircleCheck, Clock, FileText, Images, Lock, MapPin, Package, PackageX, ShieldCheck, X } from 'lucide-react'
 import { requireUser } from '@/lib/auth/session'
 import { formatDate, formatQ, timeAgo } from '@/lib/format'
 import { QUOTE, REQUEST } from '@/lib/domain/states'
 import { uuidSchema } from '@/lib/validation/schemas'
-import { getRequestForOwner, listMessages } from '@/lib/services/requests'
+import { getRequestForOwner } from '@/lib/services/requests'
+import { openQuoteChatAction } from '@/app/actions/messaging'
 import { listQuotesForRequest } from '@/lib/services/quotes'
 import { getCategory } from '@/lib/services/catalog'
 import { acceptQuoteAction, cancelRequestAction } from '@/app/actions/customer'
 import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { Badge, DemoBadge, EmptyState, Notice, PageHeader } from '@/components/ui/primitives'
 import { Avatar, PhotoGrid, Stars, StatusBadge, VerificationBadge } from '@/components/domain/visuals'
-import { QaThread } from '@/components/domain/qa-thread'
 import { cn } from '@/lib/cn'
 
 export const metadata = { title: 'Detalle de solicitud' }
@@ -22,7 +22,7 @@ export default async function RequestDetail({ params, searchParams }: { params: 
   if (!uuidSchema.safeParse(params.id).success) notFound()
   const r = await getRequestForOwner(user, params.id)
   if (!r) notFound()
-  const [quotes, messages, category] = await Promise.all([listQuotesForRequest(r.id), listMessages(r.id), getCategory(r.category_id)])
+  const [quotes, category] = await Promise.all([listQuotesForRequest(r.id), getCategory(r.category_id)])
   const open = ['open', 'quoting'].includes(r.status)
   const prices = quotes.filter((q) => q.status === 'sent').map((q) => Number(q.price_amount))
   const minPrice = prices.length ? Math.min(...prices) : null
@@ -80,6 +80,13 @@ export default async function RequestDetail({ params, searchParams }: { params: 
                       {q.notes && <p className="rounded-xl bg-paper px-3 py-2 text-xs text-ink2">{q.notes}</p>}
                     </div>
                     {open && q.status === 'sent' && (
+                      <ActionForm action={openQuoteChatAction} className="border-t border-line px-4 pt-4">
+                        <input type="hidden" name="request_id" value={r.id} />
+                        <input type="hidden" name="professional_id" value={q.professional_id} />
+                        <SubmitButton className="btn-secondary w-full" pendingText="Abriendo chat…"><MessageCircle className="h-4 w-4" aria-hidden />Chatear con {q.public_name.split(' ·')[0]}</SubmitButton>
+                      </ActionForm>
+                    )}
+                    {open && q.status === 'sent' && (
                       <ActionForm action={acceptQuoteAction} className="border-t border-line p-4"
                         confirm={`¿Aceptar la cotización de ${q.public_name} por ${formatQ(q.price_amount)}? Se creará la orden con este precio y alcance, y las demás cotizaciones se cerrarán.`}>
                         <input type="hidden" name="quote_id" value={q.id} />
@@ -93,7 +100,6 @@ export default async function RequestDetail({ params, searchParams }: { params: 
             )}
           </section>
 
-          <QaThread requestId={r.id} messages={messages} viewerId={user.id} canPost={open} />
         </div>
 
         <aside className="space-y-4">

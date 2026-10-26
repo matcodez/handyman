@@ -112,6 +112,7 @@ async function init(): Promise<Driver> {
     // Migraciones de datos demo (código, no SQL): corren una sola vez, también en bases ya sembradas.
     const dataMigrations: [string, () => Promise<void>][] = [
       ['data:003_demo_pros_por_area', async () => (await import('./seed-pros')).seedDemoProsByArea(t)],
+      ['data:005_conversaciones_demo', async () => (await import('./seed-chat')).seedDemoConversations(t)],
     ]
     for (const [name, run] of dataMigrations) {
       if (applied.has(name)) continue

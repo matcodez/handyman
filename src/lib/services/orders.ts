@@ -8,6 +8,7 @@ import {
 } from '@/lib/domain/states'
 import { getPaymentProvider } from '@/lib/payments/provider'
 import { adminIds, audit, notify, publicCode } from './core'
+import { postOrderEvent } from './messaging'
 
 export interface ScopeSnapshot {
   title: string
@@ -188,6 +189,7 @@ export async function proSetEnRoute(actor: SessionUser, orderId: string) {
     assertTransition(o, 'en_route')
     await t.q(`update orders set status = 'en_route', en_route_at = now() where id = $1`, [o.id])
     await notify(t, o.customer_id, { type: 'order.en_route', title: 'Tu profesional va en camino', body: `Orden ${o.order_number}`, href: `/cliente/ordenes/${o.id}` })
+    await postOrderEvent(t, o.id, '🚗 El profesional va en camino.')
     await audit(t, actor.id, 'order.en_route', 'order', o.id)
   })
 }
@@ -203,6 +205,7 @@ export async function proMarkArrival(actor: SessionUser, orderId: string) {
       type: 'order.arrival', title: 'Tu profesional llegó', body: 'Escanea su código QR para confirmar su identidad antes de dejarlo pasar.',
       href: `/cliente/ordenes/${o.id}`,
     })
+    await postOrderEvent(t, o.id, '📍 El profesional indicó que llegó. Escanea su código QR para confirmar su identidad.')
     await audit(t, actor.id, 'order.arrival_marked', 'order', o.id)
   })
 }
@@ -214,6 +217,7 @@ export async function proStartWork(actor: SessionUser, orderId: string) {
     if (o.status !== 'arrived') throw new AppError('El cliente debe confirmar tu identidad con el QR antes de iniciar el trabajo.')
     await t.q(`update orders set status = 'in_progress', started_at = now() where id = $1`, [o.id])
     await notify(t, o.customer_id, { type: 'order.started', title: 'El trabajo inició', body: `Orden ${o.order_number}`, href: `/cliente/ordenes/${o.id}` })
+    await postOrderEvent(t, o.id, '🔧 El trabajo inició.')
     await audit(t, actor.id, 'order.started', 'order', o.id)
   })
 }
@@ -232,6 +236,7 @@ export async function proSubmitCompletion(actor: SessionUser, orderId: string, p
       type: 'order.pending_approval', title: 'Revisa y aprueba el trabajo', body: `El profesional terminó la orden ${o.order_number}.`,
       href: `/cliente/ordenes/${o.id}`,
     })
+    await postOrderEvent(t, o.id, `📸 El profesional marcó el trabajo como terminado y subió ${photoUrls.length} foto(s). Revisa la evidencia para aprobarlo.`)
     await audit(t, actor.id, 'order.completion_submitted', 'order', o.id, { photos: photoUrls.length })
   })
 }
@@ -252,6 +257,7 @@ export async function proRequestChange(actor: SessionUser, orderId: string, desc
       type: 'order.change_requested', title: 'Solicitud de modificación de precio', body: `Orden ${o.order_number}: requiere tu aprobación.`,
       href: `/cliente/ordenes/${o.id}`,
     })
+    await postOrderEvent(t, o.id, `📝 Solicitud de modificación: ${description} → nuevo precio Q ${newPrice}. Requiere tu aprobación.`)
     await audit(t, actor.id, 'order.change_requested', 'order', o.id, { change_id: c!.id, from: o.agreed_price, to: newPrice })
   })
 }
@@ -276,6 +282,7 @@ export async function customerResolveChange(actor: SessionUser, changeId: string
       type: 'order.change_resolved', title: approve ? 'El cliente aprobó la modificación' : 'El cliente rechazó la modificación',
       body: `Orden ${o.order_number}`, href: `/pro/ordenes/${o.id}`,
     })
+    await postOrderEvent(t, o.id, approve ? `✅ El cliente aprobó la modificación. Nuevo precio: Q ${ch.new_price}.` : '❌ El cliente rechazó la modificación. Se mantiene el precio acordado.')
     await audit(t, actor.id, approve ? 'order.price_changed' : 'order.change_rejected', 'order', o.id, {
       change_id: changeId, from: o.agreed_price, to: ch.new_price,
     })
@@ -298,6 +305,7 @@ export async function customerConfirmArrival(actor: SessionUser, orderId: string
     if (p.verification_status !== 'approved') throw new AppError('El perfil de este profesional ya no está verificado. Contacta a soporte.')
     await t.q(`update orders set status = 'arrived', arrival_confirmed_at = now(), arrival_marked_at = coalesce(arrival_marked_at, now()) where id = $1`, [o.id])
     await notify(t, o.professional_id, { type: 'order.identity_confirmed', title: 'El cliente confirmó tu identidad', body: 'Ya puedes iniciar el trabajo.', href: `/pro/ordenes/${o.id}` })
+    await postOrderEvent(t, o.id, '✅ El cliente confirmó la identidad del profesional con el código QR.')
     await audit(t, actor.id, 'order.identity_confirmed', 'order', o.id, { method: 'qr' })
   })
 }
@@ -309,6 +317,7 @@ export async function customerApprove(actor: SessionUser, orderId: string) {
     if (o.status !== 'pending_approval') throw new AppError('Esta orden no está pendiente de aprobación.')
     await completeOrder(t, o, actor.id)
     await notify(t, o.professional_id, { type: 'order.approved', title: 'El cliente aprobó tu trabajo', body: `Orden ${o.order_number} completada.`, href: `/pro/ordenes/${o.id}` })
+    await postOrderEvent(t, o.id, '🎉 El cliente aprobó el trabajo. La garantía escrita ya está activa.')
     await audit(t, actor.id, 'order.approved', 'order', o.id)
   })
 }
@@ -334,6 +343,7 @@ export async function customerOpenDispute(
     for (const a of await adminIds(t)) {
       await notify(t, a, { type: 'case.new', title: `Nueva incidencia ${c!.case_number}`, body: input.reason, href: `/admin/casos/${c!.id}` })
     }
+    await postOrderEvent(t, o.id, `⚠️ El cliente abrió una incidencia (${c!.case_number}): ${input.reason}. Administración dará seguimiento.`)
     await audit(t, actor.id, 'case.opened', 'support_case', c!.id, { kind: 'dispute', order: o.order_number, reason: input.reason })
     return c!.id
   })

@@ -10,7 +10,7 @@ const MAX_BYTES = 4 * 1024 * 1024
  * Reduce fotos grandes en el navegador (máx. 1600 px, JPEG 82%) antes de subirlas:
  * las fotos de teléfono pesan varios MB y el hosting limita el tamaño de cada envío.
  */
-async function compress(file: File): Promise<File> {
+export async function compress(file: File): Promise<File> {
   if (!file.type.startsWith('image/') || file.size < 600 * 1024) return file
   try {
     const bitmap = await createImageBitmap(file)

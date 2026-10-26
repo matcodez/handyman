@@ -1,15 +1,19 @@
 import Link from 'next/link'
-import { Bell, FlaskConical, LogOut } from 'lucide-react'
+import { Bell, FlaskConical, LifeBuoy, LogOut } from 'lucide-react'
 import type { SessionUser } from '@/lib/auth/session'
 import { ROLE_LABEL } from '@/lib/domain/states'
 import { unreadCount } from '@/lib/services/core'
+import { unreadConversations } from '@/lib/services/messaging'
+import { openSupportChatAction } from '@/app/actions/messaging'
+import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { logoutAction } from '@/app/actions/auth'
 import { Avatar, Logo } from '@/components/domain/visuals'
 import { BottomNav, SidebarNav, type NavItem } from './nav-links'
 
 /** Marco de la aplicación autenticada: sidebar navy en escritorio (como WPOS) y barra inferior tipo app en móvil. */
-export async function AppShell({ user, items, children }: { user: SessionUser; items: NavItem[]; children: React.ReactNode }) {
-  const unread = await unreadCount(user.id)
+export async function AppShell({ user, items: baseItems, children }: { user: SessionUser; items: NavItem[]; children: React.ReactNode }) {
+  const [unread, unreadChats] = await Promise.all([unreadCount(user.id), unreadConversations(user.id)])
+  const items = baseItems.map((i) => (i.href === '/mensajes' ? { ...i, badge: unreadChats || undefined } : i))
   const home = items[0].href
 
   const bell = (
@@ -50,6 +54,13 @@ export async function AppShell({ user, items, children }: { user: SessionUser; i
           Entorno de demostración académica · datos ficticios, pagos simulados
         </p>
         <div className="flex items-center gap-1">
+          {user.role !== 'admin' && (
+            <ActionForm action={openSupportChatAction} resetOnSuccess={false}>
+              <SubmitButton pendingText="…" className="flex h-11 items-center gap-2 whitespace-nowrap rounded-xl px-3 font-display text-sm hover:bg-black/5 lg:hover:bg-paper2">
+                <LifeBuoy className="h-5 w-5" aria-hidden /><span className="hidden sm:inline">Pregúntale a Handyman</span><span className="sr-only sm:hidden">Pregúntale a Handyman</span>
+              </SubmitButton>
+            </ActionForm>
+          )}
           {bell}
           <form action={logoutAction} className="lg:hidden">
             <button type="submit" aria-label="Cerrar sesión" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-white/10"><LogOut className="h-5 w-5" aria-hidden /></button>
@@ -67,6 +78,7 @@ export const CUSTOMER_NAV: NavItem[] = [
   { href: '/cliente', label: 'Inicio', icon: 'dashboard', exact: true },
   { href: '/cliente/solicitudes', label: 'Mis solicitudes', short: 'Solicitudes', icon: 'requests' },
   { href: '/cliente/ordenes', label: 'Órdenes', icon: 'orders' },
+  { href: '/mensajes', label: 'Mensajes', icon: 'messages' },
   { href: '/cliente/garantias', label: 'Garantías y reclamos', short: 'Garantías', icon: 'warranty' },
   { href: '/cliente/perfil', label: 'Perfil y direcciones', short: 'Perfil', icon: 'user' },
 ]
@@ -76,6 +88,7 @@ export const PRO_NAV: NavItem[] = [
   { href: '/pro/solicitudes', label: 'Solicitudes', icon: 'inbox' },
   { href: '/pro/cotizaciones', label: 'Mis cotizaciones', short: 'Cotizaciones', icon: 'quotes' },
   { href: '/pro/ordenes', label: 'Órdenes', icon: 'orders' },
+  { href: '/mensajes', label: 'Mensajes', icon: 'messages' },
   { href: '/pro/verificacion', label: 'Verificación', icon: 'verify' },
   { href: '/pro/perfil', label: 'Perfil y galería', short: 'Perfil', icon: 'user' },
   { href: '/pro/historial', label: 'Historial y reseñas', short: 'Historial', icon: 'history' },
@@ -85,6 +98,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: '/admin', label: 'Panel', icon: 'dashboard', exact: true },
   { href: '/admin/profesionales', label: 'Profesionales', short: 'Verificar', icon: 'pros' },
   { href: '/admin/casos', label: 'Casos y reclamos', short: 'Casos', icon: 'cases' },
+  { href: '/mensajes', label: 'Mensajes y soporte', short: 'Mensajes', icon: 'messages' },
   { href: '/admin/operaciones', label: 'Operaciones', short: 'Órdenes', icon: 'orders' },
   { href: '/admin/categorias', label: 'Categorías y garantías', short: 'Oficios', icon: 'categories' },
   { href: '/admin/usuarios', label: 'Usuarios', icon: 'users' },

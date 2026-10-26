@@ -88,3 +88,16 @@ describe('validación en servidor', () => {
     expect(parseForm(categorySchema, fd({ ...base, warranty_days: '60' })).warranty_days).toBe(60)
   })
 })
+
+describe('privacidad en el chat previo a contratar', async () => {
+  const { maskContactInfo } = await import('@/lib/domain/privacy')
+  it('oculta teléfonos guatemaltecos en distintos formatos', () => {
+    expect(maskContactInfo('Llámeme al 5555 1234')).toBe('Llámeme al [número oculto]')
+    expect(maskContactInfo('Mi cel: +502 5555-1234')).toBe('Mi cel: [número oculto]')
+    expect(maskContactInfo('55551234 es mi número')).toBe('[número oculto] es mi número')
+  })
+  it('oculta correos y deja intacto el resto del texto', () => {
+    expect(maskContactInfo('Escríbame a andrea@correo.com, gracias')).toBe('Escríbame a [correo oculto], gracias')
+    expect(maskContactInfo('El trabajo cuesta Q 450 y dura 2 horas')).toBe('El trabajo cuesta Q 450 y dura 2 horas')
+  })
+})

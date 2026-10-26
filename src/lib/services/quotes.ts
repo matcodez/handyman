@@ -6,6 +6,7 @@ import type { QuoteStatus, RequestStatus, VerificationStatus } from '@/lib/domai
 import { getPaymentProvider } from '@/lib/payments/provider'
 import { audit, notify, publicCode } from './core'
 import { getRequestForPro } from './requests'
+import { postOrderEvent } from './messaging'
 
 export interface QuoteRow {
   id: string
@@ -182,6 +183,7 @@ export async function acceptQuote(actor: SessionUser, quoteId: string) {
       [order!.id, q.price_amount, hold.status, provider.name, hold.reference, provider.isDemo],
     )
 
+    await postOrderEvent(t, order!.id, `🤝 Orden ${order!.order_number} creada por Q ${q.price_amount}. Usen este chat para coordinar la visita; aquí también aparecerán los avisos del servicio.`)
     await notify(t, q.professional_id, {
       type: 'quote.accepted', title: '¡Aceptaron tu cotización!', body: `${q.request_title} · Orden ${order!.order_number}`,
       href: `/pro/ordenes/${order!.id}`,

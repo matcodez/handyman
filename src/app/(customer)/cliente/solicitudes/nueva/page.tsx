@@ -37,7 +37,7 @@ export default async function NewRequestPage({ searchParams }: { searchParams: {
                 <label key={c.id} className="flex cursor-pointer items-center gap-2.5 rounded-xl border-2 border-line bg-white p-3 transition-colors hover:border-line2 has-[:checked]:border-brand has-[:checked]:bg-brand-bg/60">
                   <input type="radio" name="category_id" value={c.id} required defaultChecked={preset ? preset === c.id : false} className="sr-only" aria-describedby={i === 0 ? undefined : undefined} />
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-bg text-brand"><CategoryIcon iconKey={c.icon_key} className="h-[18px] w-[18px]" /></span>
-                  <span className="font-display text-[13px] font-medium leading-tight">{c.name}</span>
+                  <span className="min-w-0 font-display text-[13px] font-medium leading-tight [overflow-wrap:anywhere]">{c.name}</span>
                 </label>
               ))}
             </div>

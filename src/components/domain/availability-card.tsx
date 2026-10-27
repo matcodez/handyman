@@ -12,11 +12,11 @@ export function AvailabilityCard({ on, until, urgent }: { on: boolean; until: Da
     <section className={`card overflow-hidden ${on ? 'ring-2 ring-ok' : ''}`}>
       <div className="flex flex-wrap items-center gap-4 p-5">
         <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${on ? 'bg-ok text-white' : 'bg-paper2 text-ink3'}`}><Radio className="h-6 w-6" aria-hidden /></span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-52">
           <p className="font-display text-lg font-semibold">{on ? 'Disponible para emergencias' : 'No disponible para emergencias'}</p>
           <p className="text-sm text-ink2">{on ? (until ? `Recibes primero las emergencias cercanas hasta las ${hour(until)}.` : 'Recibes primero las emergencias cercanas.') : 'Actívalo cuando puedas salir de inmediato: te avisamos primero de emergencias cerca.'}</p>
         </div>
-        <ActionForm action={setAvailabilityAction} className="flex items-center gap-2">
+        <ActionForm action={setAvailabilityAction} className="flex w-full items-center gap-2 sm:w-auto [&>button]:flex-1 sm:[&>button]:flex-none">
           <input type="hidden" name="on" value={on ? '0' : '1'} />
           {!on && (
             <>

@@ -41,7 +41,7 @@ export function ProProfileView({ pro, categories, portfolio, reviews, aside }: {
         <section className="card card-pad" aria-labelledby="galeria">
           <div className="flex items-center justify-between gap-3">
             <h2 id="galeria" className="flex items-center gap-2 text-lg font-semibold"><Images className="h-5 w-5 text-brand" aria-hidden />Trabajos anteriores</h2>
-            {portfolio.some((p) => p.photo_urls.some((u) => u.startsWith('demo:'))) && <DemoBadge>Fotos de demostración</DemoBadge>}
+            {portfolio.some((p) => p.photo_urls.some((u) => u.startsWith('demo:'))) && <DemoBadge>Fotos ilustrativas</DemoBadge>}
           </div>
           {portfolio.length === 0 ? (
             <p className="mt-3 text-sm text-ink2">Este profesional aún no ha publicado trabajos en su galería.</p>

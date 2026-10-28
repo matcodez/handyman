@@ -23,24 +23,24 @@ const GENERAL_TERMS = (days: number, extra: string) =>
   `(Texto de demostración: los términos legales definitivos están pendientes de revisión.)`
 
 const CATEGORIES: [name: string, slug: string, desc: string, icon: string, days: number, extra: string][] = [
-  ['Plomería', 'plomeria', 'Fugas, grifos, tuberías, calentadores y drenajes.', 'droplets', 60, 'Incluye fugas en las uniones o piezas instaladas.'],
-  ['Electricidad', 'electricidad', 'Tomacorrientes, iluminación, fallas y cableado.', 'zap', 60, 'Incluye fallas en conexiones y dispositivos instalados.'],
+  ['Plomería', 'plomeria', 'Fugas, grifos, tuberías, calentadores y drenajes.', 'shower-head', 60, 'Incluye fugas en las uniones o piezas instaladas.'],
+  ['Electricidad', 'electricidad', 'Tomacorrientes, iluminación, fallas y cableado.', 'plug-zap', 60, 'Incluye fallas en conexiones y dispositivos instalados.'],
   ['Albañilería / construcción', 'albanileria', 'Reparaciones, paredes y trabajos de obra menor.', 'brick-wall', 90, 'Incluye fisuras o desprendimientos en el área intervenida.'],
   ['Pintura', 'pintura', 'Interiores, exteriores y retoques.', 'paint-roller', 30, 'Incluye descascarado o burbujas en superficies preparadas por el profesional.'],
   ['Carpintería', 'carpinteria', 'Puertas, muebles, reparaciones e instalación.', 'hammer', 60, 'Incluye ajustes de bisagras, rieles y ensambles realizados.'],
-  ['Herrería', 'herreria', 'Portones, balcones, protecciones y soldadura.', 'fence', 90, 'Incluye soldaduras y anclajes realizados.'],
-  ['Jardinería / paisajismo', 'jardineria', 'Poda, mantenimiento e instalación básica.', 'trees', 30, 'Incluye reposición de plantas instaladas que no hayan prendido.'],
+  ['Herrería', 'herreria', 'Portones, balcones, protecciones y soldadura.', 'flame', 90, 'Incluye soldaduras y anclajes realizados.'],
+  ['Jardinería / paisajismo', 'jardineria', 'Poda, mantenimiento e instalación básica.', 'sprout', 30, 'Incluye reposición de plantas instaladas que no hayan prendido.'],
   ['Tablayeso / cielo falso', 'tablayeso', 'Divisiones, reparaciones e instalación.', 'layers', 60, 'Incluye fisuras en juntas y desniveles.'],
   ['Pisos', 'pisos', 'Instalación, reparación y pulido.', 'grid-3x3', 90, 'Incluye piezas sueltas o desniveladas.'],
-  ['Techado e impermeabilización', 'techado', 'Filtraciones y reparación de techos.', 'umbrella', 90, 'Incluye filtraciones en el área tratada.'],
+  ['Techado e impermeabilización', 'techado', 'Filtraciones y reparación de techos.', 'house', 90, 'Incluye filtraciones en el área tratada.'],
   ['Cerrajería', 'cerrajeria', 'Cerraduras, chapas e instalación.', 'key-round', 30, 'Incluye fallas de instalación de chapas y cerraduras.'],
-  ['Limpieza profunda', 'limpieza', 'Hogares, oficinas y limpieza post-construcción.', 'sparkles', 30, 'Incluye repaso de áreas que no cumplan lo acordado, reportadas en 48 horas.'],
+  ['Limpieza profunda', 'limpieza', 'Hogares, oficinas y limpieza post-construcción.', 'spray-can', 30, 'Incluye repaso de áreas que no cumplan lo acordado, reportadas en 48 horas.'],
   ['Vidrio y aluminio', 'vidrio-aluminio', 'Ventanas, puertas y reparaciones.', 'panels-top-left', 60, 'Incluye sellos, rieles y herrajes instalados.'],
-  ['Aire acondicionado y refrigeración', 'aire-acondicionado', 'Mantenimiento e instalación.', 'air-vent', 60, 'Incluye fugas de gas o fallas en la instalación.'],
-  ['Control de plagas', 'control-plagas', 'Servicios de fumigación.', 'bug', 30, 'Incluye una reaplicación si la plaga tratada reaparece.'],
+  ['Aire acondicionado y refrigeración', 'aire-acondicionado', 'Mantenimiento e instalación.', 'snowflake', 60, 'Incluye fugas de gas o fallas en la instalación.'],
+  ['Control de plagas', 'control-plagas', 'Servicios de fumigación.', 'bug-off', 30, 'Incluye una reaplicación si la plaga tratada reaparece.'],
   ['Seguridad electrónica', 'seguridad-electronica', 'Cámaras, alarmas y dispositivos.', 'cctv', 60, 'Incluye configuración y cableado instalado.'],
   ['Mudanzas', 'mudanzas', 'Traslado de muebles y pertenencias.', 'truck', 30, 'Incluye daños ocurridos durante el traslado, reportados al finalizar.'],
-  ['Ingeniería civil / supervisión', 'ingenieria-civil', 'Inspecciones, planos y supervisión profesional cuando corresponda.', 'ruler', 30, 'Cubre correcciones a entregables documentales.'],
+  ['Ingeniería civil / supervisión', 'ingenieria-civil', 'Inspecciones, planos y supervisión profesional cuando corresponda.', 'hard-hat', 30, 'Cubre correcciones a entregables documentales.'],
 ]
 
 interface ProSeed {

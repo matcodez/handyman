@@ -7,7 +7,7 @@ import { listOrders, listWarranties } from '@/lib/services/orders'
 import { listCategories } from '@/lib/services/catalog'
 import { EmptyState, Notice, PageHeader, Section, Stat } from '@/components/ui/primitives'
 import { OrderCard, RequestCard } from '@/components/domain/cards'
-import { CategoryIcon } from '@/components/domain/visuals'
+import { CategoryTile } from '@/components/domain/visuals'
 
 export const metadata = { title: 'Mi panel' }
 
@@ -79,7 +79,7 @@ export default async function CustomerDashboard({ searchParams }: { searchParams
           {categories.slice(0, 6).map((c) => (
             <li key={c.id}>
               <Link href={`/cliente/solicitudes/nueva?oficio=${c.slug}`} className="card flex h-full flex-col items-center gap-2 p-3 text-center transition-shadow hover:shadow-lift">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-bg text-brand"><CategoryIcon iconKey={c.icon_key} className="h-5 w-5" /></span>
+                <CategoryTile iconKey={c.icon_key} className="h-10 w-10 rounded-xl" />
                 <span className="font-display text-xs font-medium leading-tight">{c.name.split(' /')[0]}</span>
               </Link>
             </li>

@@ -8,7 +8,8 @@ import { listCategories } from '@/lib/services/catalog'
 import { listPublicPros } from '@/lib/services/professionals'
 import { DemoBadge } from '@/components/ui/primitives'
 import { ProCard } from '@/components/domain/cards'
-import { Avatar, CategoryIcon } from '@/components/domain/visuals'
+import { Avatar, CategoryCover, CategoryTile } from '@/components/domain/visuals'
+import { HERO_PHOTO, PROS_PHOTO } from '@/lib/media'
 
 const TRUST = [
   { icon: BadgeCheck, title: 'Identidad verificada', text: 'Cada profesional entrega su DPI y constancias de antecedentes. Administración revisa el expediente antes de aprobarlo.', stat: '71.4%', statText: 'dijo que le cuesta encontrar a alguien de confianza' },
@@ -52,7 +53,7 @@ export default async function HomePage() {
           <div className="absolute -right-32 -top-40 h-[30rem] w-[30rem] rounded-full bg-brand/40 blur-3xl" aria-hidden />
           <div className="absolute -bottom-40 left-1/4 h-80 w-80 rounded-full bg-accent/15 blur-3xl" aria-hidden />
 
-          <div className="relative grid gap-10 px-5 py-10 sm:px-10 sm:py-14 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:px-14 lg:py-20">
+          <div className="relative grid gap-10 px-5 py-10 sm:px-10 sm:py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-14 lg:py-20">
             <div className="animate-in-up">
               <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-display text-xs font-medium text-white/85">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
@@ -99,37 +100,51 @@ export default async function HomePage() {
               </dl>
             </div>
 
-            {/* Composición: perfil verificado + carné QR + garantía */}
-            <div className="relative mx-auto hidden w-full max-w-sm lg:block" aria-hidden>
-              <div className="animate-float rounded-3xl bg-white p-5 text-ink shadow-float">
-                <div className="flex items-center gap-3.5">
-                  <Avatar name={featured?.public_name ?? 'Profesional Demo'} size="lg" />
-                  <div className="min-w-0">
-                    <p className="truncate font-display font-semibold">{featured?.public_name ?? 'Profesional demo'}</p>
-                    <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-ok-bg px-2.5 py-1 font-display text-xs font-medium text-ok"><BadgeCheck className="h-3.5 w-3.5" />Identidad verificada</p>
+            {/* Composición: foto real + perfil verificado + carné QR + garantía */}
+            <div className="relative mx-auto w-full max-w-md lg:max-w-none" aria-hidden>
+              <div className="relative overflow-hidden rounded-[2rem] shadow-float ring-1 ring-white/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={HERO_PHOTO} alt="" className="aspect-[5/4] w-full object-cover" fetchPriority="high" />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy/80 via-navy/10 to-transparent" />
+                <div className="absolute inset-x-4 bottom-4 flex items-center gap-3 rounded-2xl bg-white/95 p-3 text-ink shadow-float backdrop-blur sm:inset-x-5 sm:bottom-5">
+                  <Avatar name={featured?.public_name ?? 'Profesional Demo'} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-display text-sm font-semibold">{featured?.public_name ?? 'Profesional demo'}</p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink2">
+                      <BadgeCheck className="h-3.5 w-3.5 text-ok" />Verificado
+                      <span className="text-line2">·</span>
+                      <Star className="h-3.5 w-3.5 fill-accent text-accent" />{Number(featured?.rating_average ?? 5).toFixed(1)}
+                      <span className="hidden text-line2 sm:inline">·</span><span className="hidden whitespace-nowrap sm:inline">{featured?.completed_jobs_count ?? 0} trabajos</span>
+                    </p>
                   </div>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-paper py-2.5"><p className="font-num text-lg font-semibold">{featured?.years_experience ?? 10}</p><p className="text-[11px] text-ink3">años</p></div>
-                  <div className="rounded-xl bg-paper py-2.5"><p className="font-num text-lg font-semibold">{featured?.completed_jobs_count ?? 0}</p><p className="text-[11px] text-ink3">trabajos</p></div>
-                  <div className="rounded-xl bg-paper py-2.5"><p className="font-num text-lg font-semibold">{Number(featured?.rating_average ?? 5).toFixed(1)}</p><p className="text-[11px] text-ink3">calificación</p></div>
-                </div>
-                <div className="mt-4 flex items-center justify-between rounded-2xl border border-line px-4 py-3">
-                  <div><p className="text-xs text-ink3">Cotización</p><p className="font-num text-xl font-semibold">Q 450.00</p></div>
-                  <span className="rounded-lg bg-brand px-3 py-1.5 font-display text-xs font-medium text-white">Aceptar</span>
+                  <div className="text-right"><p className="text-[11px] text-ink3">Cotización</p><p className="font-num text-base font-semibold">Q 450</p></div>
                 </div>
               </div>
-              <div className="absolute -left-12 bottom-10 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-ink shadow-float">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy text-white"><QrCode className="h-6 w-6" /></span>
+              <div className="absolute -left-4 top-8 hidden items-center gap-3 rounded-2xl bg-white px-4 py-3 text-ink shadow-float sm:flex lg:-left-10">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy text-white"><QrCode className="h-5 w-5" /></span>
                 <div><p className="font-display text-sm font-semibold">Carné con QR</p><p className="text-xs text-ink3">Confirma quién llega</p></div>
               </div>
-              <div className="absolute -right-6 -top-6 flex items-center gap-2.5 rounded-2xl bg-accent px-4 py-3 text-navy shadow-float">
+              <div className="absolute -right-3 -top-5 flex items-center gap-2.5 rounded-2xl bg-accent px-4 py-3 text-navy shadow-float lg:-right-6">
                 <ShieldCheck className="h-6 w-6" />
                 <div><p className="font-display text-sm font-semibold leading-tight">Garantía escrita</p><p className="text-xs">30 a 90 días</p></div>
               </div>
             </div>
           </div>
         </div>
+      </section>
+
+      {/* OFICIOS POPULARES: acceso de un toque */}
+      <section className="container-page mt-6" aria-label="Oficios más pedidos">
+        <ul className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] sm:flex-wrap sm:justify-center sm:overflow-visible">
+          {categories.slice(0, 8).map((c) => (
+            <li key={c.id} className="shrink-0">
+              <Link href={`/profesionales?oficio=${c.slug}`} className="inline-flex items-center gap-2 rounded-full bg-white py-1.5 pl-1.5 pr-4 font-display text-sm font-medium text-ink shadow-card transition hover:-translate-y-0.5 hover:shadow-lift">
+                <CategoryTile iconKey={c.icon_key} size="sm" className="h-8 w-8 rounded-full" />
+                {c.name.split(' /')[0]}
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* CATEGORÍAS */}
@@ -141,16 +156,16 @@ export default async function HomePage() {
           </div>
           <Link href="/servicios" className="hidden items-center gap-1 font-display text-sm font-medium text-brand hover:underline sm:inline-flex">Ver los {categories.length} oficios <ArrowRight className="h-4 w-4" aria-hidden /></Link>
         </div>
-        <ul className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <ul className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
           {categories.slice(0, 8).map((c) => (
             <li key={c.id}>
-              <Link href={`/servicios#${c.slug}`} className="card group flex h-full flex-col gap-3 p-4 transition-all hover:-translate-y-0.5 hover:shadow-lift sm:p-5">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-bg text-brand transition-colors group-hover:bg-brand group-hover:text-white">
-                  <CategoryIcon iconKey={c.icon_key} className="h-6 w-6" />
-                </span>
-                <span>
-                  <span className="block font-display text-[15px] font-semibold text-ink">{c.name}</span>
-                  <span className="mt-1 line-clamp-2 block text-[13px] text-ink2">{c.description}</span>
+              <Link href={`/servicios#${c.slug}`} className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-2xl bg-navy shadow-card transition-all hover:-translate-y-1 hover:shadow-lift sm:aspect-[4/3.6]">
+                <CategoryCover slug={c.slug} iconKey={c.icon_key} alt="" className="absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105" />
+                <span className="absolute inset-0 bg-gradient-to-t from-navy via-navy/45 to-transparent" aria-hidden />
+                <CategoryTile iconKey={c.icon_key} size="sm" className="absolute left-3 top-3 shadow-card sm:left-4 sm:top-4" />
+                <span className="relative p-3.5 text-white sm:p-4">
+                  <span className="block font-display text-[15px] font-semibold leading-tight sm:text-base">{c.name}</span>
+                  <span className="mt-1 line-clamp-2 block text-[12.5px] leading-snug text-white/80 sm:text-[13px]">{c.description}</span>
                 </span>
               </Link>
             </li>
@@ -267,8 +282,10 @@ export default async function HomePage() {
 
       {/* CTA PROFESIONALES */}
       <section className="container-page mt-20">
-        <div className="relative overflow-hidden rounded-xl3 bg-brand px-6 py-12 text-center text-white sm:px-12">
-          <div className="dots absolute inset-0" aria-hidden />
+        <div className="relative overflow-hidden rounded-xl3 bg-brand px-6 py-14 text-center text-white sm:px-12 sm:py-20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={PROS_PHOTO} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" aria-hidden />
+          <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/70 to-brand-dark/45" aria-hidden />
           <div className="relative">
             <h2 className="text-balance mx-auto max-w-2xl text-2xl font-semibold sm:text-4xl">¿Eres profesional de un oficio? Consigue clientes con tu trabajo como respaldo.</h2>
             <p className="mx-auto mt-3 max-w-xl text-white/80">Crea tu perfil, verifica tu identidad y cotiza solicitudes de tu zona. Tu carné digital con QR le da tranquilidad al cliente.</p>

@@ -3,7 +3,7 @@ import { listCategories, type Category } from '@/lib/services/catalog'
 import { saveCategoryAction, toggleCategoryAction } from '@/app/actions/admin'
 import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { Badge, PageHeader, Section } from '@/components/ui/primitives'
-import { CATEGORY_ICONS, CategoryIcon } from '@/components/domain/visuals'
+import { CATEGORY_ICONS, CategoryTile } from '@/components/domain/visuals'
 
 export const metadata = { title: 'Categorías y garantías' }
 
@@ -51,7 +51,7 @@ export default async function AdminCategories() {
             <li key={c.id}>
               <details className="card group">
                 <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3 px-5 py-3.5 [&::-webkit-details-marker]:hidden">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-bg text-brand"><CategoryIcon iconKey={c.icon_key} className="h-5 w-5" /></span>
+                  <CategoryTile iconKey={c.icon_key} className="h-10 w-10 rounded-xl" />
                   <span className="min-w-0 flex-1"><span className="block font-display font-semibold">{c.name}</span><span className="block truncate text-xs text-ink3">{c.description}</span></span>
                   <Badge tone="info">{c.warranty_days} días</Badge>
                   <Badge tone={c.active ? 'ok' : 'neutral'}>{c.active ? 'Activa' : 'Inactiva'}</Badge>

@@ -1,8 +1,10 @@
 import {
-  AirVent, BadgeCheck, BrickWall, Bug, Cctv, Droplets, Fence, Grid3x3, Hammer, Hourglass, KeyRound, Layers, PaintRoller,
-  PanelsTopLeft, Ruler, ShieldAlert, Sparkles, Star, Trees, Truck, Umbrella, Wrench, Zap, type LucideIcon,
+  AirVent, BadgeCheck, BrickWall, Bug, BugOff, Cctv, Drill, Droplets, Fence, Flame, Grid3x3, Hammer, HardHat, Hourglass, House, KeyRound,
+  Layers, PaintRoller, PanelsTopLeft, PlugZap, Ruler, ShieldAlert, ShowerHead, Snowflake, Sparkles, SprayCan, Sprout, Star, Trees, Truck,
+  Umbrella, Wrench, Zap, type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { categoryPhoto, isRepeatedPhoto } from '@/lib/media'
 import { initials } from '@/lib/format'
 import { VERIFICATION, type Tone, type VerificationStatus } from '@/lib/domain/states'
 import { Badge } from '@/components/ui/primitives'
@@ -12,18 +14,63 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   droplets: Droplets, zap: Zap, 'brick-wall': BrickWall, 'paint-roller': PaintRoller, hammer: Hammer, fence: Fence, trees: Trees,
   layers: Layers, 'grid-3x3': Grid3x3, umbrella: Umbrella, 'key-round': KeyRound, sparkles: Sparkles, 'panels-top-left': PanelsTopLeft,
   'air-vent': AirVent, bug: Bug, cctv: Cctv, truck: Truck, ruler: Ruler, wrench: Wrench,
+  // Íconos más específicos por oficio (migración 007).
+  'shower-head': ShowerHead, 'plug-zap': PlugZap, flame: Flame, sprout: Sprout, house: House, 'spray-can': SprayCan,
+  snowflake: Snowflake, 'bug-off': BugOff, 'hard-hat': HardHat, drill: Drill,
 }
 
 const SLUG_ICON: Record<string, string> = {
-  plomeria: 'droplets', electricidad: 'zap', albanileria: 'brick-wall', pintura: 'paint-roller', carpinteria: 'hammer', herreria: 'fence',
-  jardineria: 'trees', tablayeso: 'layers', pisos: 'grid-3x3', techado: 'umbrella', cerrajeria: 'key-round', limpieza: 'sparkles',
-  'vidrio-aluminio': 'panels-top-left', 'aire-acondicionado': 'air-vent', 'control-plagas': 'bug', 'seguridad-electronica': 'cctv',
-  mudanzas: 'truck', 'ingenieria-civil': 'ruler',
+  plomeria: 'shower-head', electricidad: 'plug-zap', albanileria: 'brick-wall', pintura: 'paint-roller', carpinteria: 'hammer', herreria: 'flame',
+  jardineria: 'sprout', tablayeso: 'layers', pisos: 'grid-3x3', techado: 'house', cerrajeria: 'key-round', limpieza: 'spray-can',
+  'vidrio-aluminio': 'panels-top-left', 'aire-acondicionado': 'snowflake', 'control-plagas': 'bug-off', 'seguridad-electronica': 'cctv',
+  mudanzas: 'truck', 'ingenieria-civil': 'hard-hat',
+}
+
+// Color propio por ícono: ayuda a reconocer el oficio de un vistazo (el nombre siempre acompaña).
+const ICON_TONES: Record<string, string> = {
+  'shower-head': 'bg-sky-100 text-sky-700', droplets: 'bg-sky-100 text-sky-700',
+  'plug-zap': 'bg-amber-100 text-amber-700', zap: 'bg-amber-100 text-amber-700',
+  'brick-wall': 'bg-orange-100 text-orange-700', 'paint-roller': 'bg-fuchsia-100 text-fuchsia-700',
+  hammer: 'bg-yellow-100 text-yellow-800', drill: 'bg-yellow-100 text-yellow-800',
+  flame: 'bg-red-100 text-red-700', fence: 'bg-red-100 text-red-700',
+  sprout: 'bg-emerald-100 text-emerald-700', trees: 'bg-emerald-100 text-emerald-700',
+  layers: 'bg-stone-200 text-stone-700', 'grid-3x3': 'bg-teal-100 text-teal-700',
+  house: 'bg-rose-100 text-rose-700', umbrella: 'bg-rose-100 text-rose-700',
+  'key-round': 'bg-violet-100 text-violet-700', 'spray-can': 'bg-cyan-100 text-cyan-700', sparkles: 'bg-cyan-100 text-cyan-700',
+  'panels-top-left': 'bg-blue-100 text-blue-700', snowflake: 'bg-indigo-100 text-indigo-700', 'air-vent': 'bg-indigo-100 text-indigo-700',
+  'bug-off': 'bg-lime-100 text-lime-800', bug: 'bg-lime-100 text-lime-800', cctv: 'bg-slate-200 text-slate-700',
+  truck: 'bg-orange-100 text-orange-800', 'hard-hat': 'bg-amber-100 text-amber-800', ruler: 'bg-amber-100 text-amber-800',
 }
 
 export function CategoryIcon({ iconKey, className }: { iconKey: string; className?: string }) {
   const Icon = CATEGORY_ICONS[iconKey] ?? Wrench
   return <Icon className={className} aria-hidden />
+}
+
+/** Ícono de oficio dentro de su recuadro de color. */
+export function CategoryTile({ iconKey, size = 'md', className }: { iconKey: string; size?: 'sm' | 'md' | 'lg'; className?: string }) {
+  const box = { sm: 'h-9 w-9 rounded-lg', md: 'h-12 w-12 rounded-2xl', lg: 'h-14 w-14 rounded-2xl' }[size]
+  const icon = { sm: 'h-[18px] w-[18px]', md: 'h-6 w-6', lg: 'h-7 w-7' }[size]
+  return (
+    <span className={cn('flex shrink-0 items-center justify-center', box, ICON_TONES[iconKey] ?? 'bg-brand-bg text-brand', className)}>
+      <CategoryIcon iconKey={iconKey} className={icon} />
+    </span>
+  )
+}
+
+/** Foto del oficio, o un fondo de marca con su ícono si el oficio no tiene foto. */
+export function CategoryCover({ slug, iconKey, alt, className, variant = 1 }: { slug: string; iconKey: string; alt: string; className?: string; variant?: number }) {
+  const src = categoryPhoto(slug, variant)
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} loading="lazy" decoding="async" className={cn('bg-paper2 object-cover', className)} />
+  }
+  return (
+    <div role="img" aria-label={alt} className={cn('relative overflow-hidden bg-gradient-to-br from-navy-3 via-brand-dark to-brand', className)}>
+      <div className="dots absolute inset-0" />
+      <CategoryIcon iconKey={iconKey} className="absolute left-1/2 top-1/2 h-1/3 w-1/3 -translate-x-1/2 -translate-y-1/2 text-white/85" />
+    </div>
+  )
 }
 
 const PHOTO_PALETTES = [
@@ -34,13 +81,23 @@ const PHOTO_PALETTES = [
 ]
 
 /**
- * Foto de un trabajo o solicitud. Las URLs `demo:<slug>:<n>` se dibujan como una
- * ilustración claramente etiquetada; las fotos subidas por usuarios se muestran tal cual.
+ * Foto de un trabajo o solicitud. Las URLs `demo:<slug>:<n>` muestran una foto ilustrativa
+ * del oficio (o una ilustración si no hay), claramente etiquetada; las fotos subidas por usuarios se muestran tal cual.
  */
 export function Photo({ src, alt, className, label = true }: { src: string; alt: string; className?: string; label?: boolean }) {
   if (src.startsWith('demo:')) {
     const [, slug, v] = src.split(':')
     const n = Number(v) || 1
+    const stock = categoryPhoto(slug, n)
+    if (stock) {
+      return (
+        <div className={cn('relative overflow-hidden bg-paper2', className)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={stock} alt={`${alt} (foto ilustrativa)`} loading="lazy" decoding="async" className={cn('h-full w-full object-cover', isRepeatedPhoto(slug, n) && '-scale-x-100 scale-y-[1.15] object-[30%_40%]')} />
+          {label && <span className="absolute bottom-2 left-2 rounded-md bg-navy/60 px-1.5 py-0.5 font-display text-[10px] font-medium uppercase tracking-wider text-white/90 backdrop-blur">Foto ilustrativa</span>}
+        </div>
+      )
+    }
     const Icon = CATEGORY_ICONS[SLUG_ICON[slug] ?? 'wrench'] ?? Wrench
     return (
       <div role="img" aria-label={`${alt} (foto de demostración)`} className={cn('relative overflow-hidden bg-gradient-to-br', PHOTO_PALETTES[n % PHOTO_PALETTES.length], className)}>

@@ -28,7 +28,7 @@ export async function PublicNav() {
           ) : (
             <Link href="/login" className="btn-ghost btn-sm hidden sm:inline-flex">Acceder</Link>
           )}
-          <Link href={cta} className="btn-primary btn-sm">{user && user.role !== 'customer' ? 'Ir a mi panel' : 'Solicitar servicio'}</Link>
+          <Link href={cta} className="btn-primary btn-sm whitespace-nowrap">{user && user.role !== 'customer' ? 'Ir a mi panel' : 'Solicitar servicio'}</Link>
           <details className="relative md:hidden">
             <summary aria-label="Abrir menú" className="flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl hover:bg-paper [&::-webkit-details-marker]:hidden">
               <Menu className="h-5 w-5" aria-hidden />

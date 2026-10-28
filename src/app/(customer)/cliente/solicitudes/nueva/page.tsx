@@ -8,7 +8,7 @@ import { createRequestAction } from '@/app/actions/customer'
 import { ActionForm, SubmitButton } from '@/components/ui/action-form'
 import { PageHeader } from '@/components/ui/primitives'
 import { PhotoInput } from '@/components/domain/photo-input'
-import { CategoryIcon } from '@/components/domain/visuals'
+import { CategoryTile } from '@/components/domain/visuals'
 import { Stepper } from './stepper'
 import { DictateButton } from '@/components/domain/dictate-button'
 import { QuickDate } from '@/components/domain/quick-date'
@@ -36,7 +36,7 @@ export default async function NewRequestPage({ searchParams }: { searchParams: {
               {categories.map((c, i) => (
                 <label key={c.id} className="flex cursor-pointer items-center gap-2.5 rounded-xl border-2 border-line bg-white p-3 transition-colors hover:border-line2 has-[:checked]:border-brand has-[:checked]:bg-brand-bg/60">
                   <input type="radio" name="category_id" value={c.id} required defaultChecked={preset ? preset === c.id : false} className="sr-only" aria-describedby={i === 0 ? undefined : undefined} />
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-bg text-brand"><CategoryIcon iconKey={c.icon_key} className="h-[18px] w-[18px]" /></span>
+                  <CategoryTile iconKey={c.icon_key} size="sm" />
                   <span className="min-w-0 font-display text-[13px] font-medium leading-tight [overflow-wrap:anywhere]">{c.name}</span>
                 </label>
               ))}

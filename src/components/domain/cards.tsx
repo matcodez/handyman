@@ -9,7 +9,7 @@ import type { ProCard as ProCardData } from '@/lib/services/professionals'
 import type { OrderRow, WarrantyRow } from '@/lib/services/orders'
 import type { RequestRow } from '@/lib/services/requests'
 import { Badge, DemoBadge } from '@/components/ui/primitives'
-import { Avatar, CategoryIcon, Stars, StatusBadge, VerificationBadge } from './visuals'
+import { Avatar, CategoryTile, Stars, StatusBadge, VerificationBadge } from './visuals'
 
 export function ProCard({ pro }: { pro: ProCardData }) {
   return (
@@ -39,9 +39,7 @@ export function ProCard({ pro }: { pro: ProCardData }) {
 export function RequestCard({ r, href }: { r: RequestRow; href: string }) {
   return (
     <Link href={href} className="card group flex items-center gap-4 p-4 transition-shadow hover:shadow-lift sm:p-5">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-bg text-brand">
-        <CategoryIcon iconKey={r.category_icon} className="h-5 w-5" />
-      </div>
+      <CategoryTile iconKey={r.category_icon} className="rounded-xl" />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="truncate font-display text-[15px] font-semibold text-ink group-hover:text-brand">{r.title}</h3>
